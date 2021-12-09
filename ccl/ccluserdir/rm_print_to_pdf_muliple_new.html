@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <title>Print to PDF Viewer</title>
+ <meta name="discern" content="MPAGES_SVC_AUTH,CCLNEWSESSIONWINDOW,CCLEVENT">
+ <meta http-equiv="x-ua-compatible" content="IE=edge" />
+ <script src="I:\\WININTEL\\static_content\\custom_mpage_content\\requisition_manager\js\foundation.js" type="text/javascript"></script>
+ <script src="I:\\WININTEL\\static_content\\custom_mpage_content\\requisition_manager\js\jspdf.min.js" type="text/javascript"></script>
+ <script src="I:\\WININTEL\\static_content\\custom_mpage_content\\requisition_manager\js\pdf.js" type="text/javascript"></script>
+ <script src="I:\\WININTEL\\static_content\\custom_mpage_content\\requisition_manager\js\pdf.worker.js" type="text/javascript"></script>
+ <style>
+ 
+ 
+	.basic a:link {
+  		color: #000000;
+	}
+	.basic a:visited,
+	.basic a:hover,
+	.basic a:active {
+  		color: #000000;
+	}
+ 
+	#banner_bar {
+		background: #319DD8;
+		background: -moz-linear-gradient(top, #319DD8 0%, #17629a 100%);
+		background: -webkit-linear-gradient(top, #319DD8 0%, #17629a 100%);
+		background: linear-gradient(to bottom, #319DD8 0%, #17629a 100%);
+	}
+ 
+	#banner_bar_font {
+		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-size: 14px;
+		letter-spacing: 0px;
+		word-spacing: 0px;
+		color: #FFFFFF;
+		font-weight: normal;
+		text-decoration: none;
+		font-style: normal;
+		font-variant: normal;
+		text-transform: none;
+	}
+ 
+#caveat_font {
+		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-size: 12px;
+		letter-spacing: 0px;
+		word-spacing: 0px;
+		color: #000000;
+		font-weight: normal;
+		text-decoration: none;
+		font-style: normal;
+		font-variant: normal;
+		text-transform: none;
+	}
+ 
+	#body_font {
+		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-size: 16px;
+		letter-spacing: 0px;
+		word-spacing: 0px;
+		color: #000000;
+		font-weight: normal;
+		text-decoration: none;
+		font-style: normal;
+		font-variant: normal;
+		text-transform: none;
+	}
+ 
+		#debug_font {
+		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-size: 6px;
+		letter-spacing: 0px;
+		word-spacing: 0px;
+		color: #000000;
+		font-weight: normal;
+		text-decoration: none;
+		font-style: normal;
+		font-variant: normal;
+		text-transform: none;
+	}
+ 
+	.myButton { color: rgb(255, 255, 255);
+				font-size: 15px;
+				line-height: 15px;
+				padding: 5px;
+				border-radius: 3px;
+				font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+				font-weight: normal;
+				text-decoration: none;
+				font-style: normal;
+				font-variant: normal;
+				text-transform: none;
+				background-image: radial-gradient(at center center, rgb(28, 110, 164) 0%, rgb(35, 136, 203) 100%, rgb(20, 78, 117) 100%);
+				display: inline-block;}
+	.myButton:hover { background: #1C6EA4; }
+	.myButton:active { background: #144E75; }
+ 
+	.final_pdf {
+		border: solid 1px blue;
+  		width: 100%;
+	}
+ 
+	table.action_list {
+	margin: auto;
+	width: auto;
+	border-collapse: collapse;
+	border: 1px solid #319DD8; /*for older IE*/
+ 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+ 			font-size: 12px;
+		letter-spacing: 0px;
+		word-spacing: 0px;
+		color: #000000;
+		font-weight: normal;
+		text-decoration: none;
+		font-style: normal;
+		font-variant: normal;
+		text-transform: none;
+	}
+ 
+	table.action_list thead th {
+	padding: 8px;
+	background-color: #319DD8;
+	font-size: large;
+	}
+ 
+	table.action_list thead th#thDay {
+		width: 40%;
+	}
+ 
+	table.action_list thead th#thRegular, table.action_list thead th#thOvertime, table.action_list thead th#thTotal {
+		width: 20%;
+	}
+ 
+	table.action_list th, table.action_list td {
+		padding: 3px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #319DD8 #319DD8;
+	}
+ 
+	table.action_list td {
+		text-align: right;
+	}
+ 
+	table.action_list tbody th {
+		text-align: left;
+		font-weight: normal;
+	}
+ 
+	table.action_list tfoot {
+		font-weight: bold;
+		font-size: large;
+		background-color: #319DD8;
+		color: #fff;
+	}
+ 
+	table.action_list tr.even {
+		background-color: #fde9d9;
+	}
+ 
+ </style>
+ 
+ 
+<script language="javascript">
+ 
+ 	var patientDataJSON = '@MESSAGE:[PATIENTDATA]';
+ 	var resultDataJSON 	= '@MESSAGE:[RESULTDATA]';
+ 
+ 
+	var patientData		= JSON.parse(patientDataJSON);
+	var resultData		= JSON.parse(resultDataJSON);
+ 
+ 	var urls = []
+ 
+ 	var requestAsync  = getXMLHttpRequest();
+ 
+ 	var loadedCount = 0
+ 	var pdfDocs = []
+	current = {}
+	totalPageCount = 0
+	pageNum = 1
+	pageRendering = false
+	pageNumPending = null
+	scale = 2
+	divCount = 0
+ 
+	pdfjsLib.disableWorker = true;
+ 
+	function loadpdfurl() {
+		var container = document.getElementById("PDFDiv");
+		pdfjsLib.getDocument(urls[loadedCount]).promise.then(function(pdfDoc_) {
+			pdfDocs.push(pdfDoc_);
+			loadedCount++;
+			if (loadedCount !== urls.length) {
+			  return loadpdfurl();
+			}
+			for (var docIdx = 0; docIdx < pdfDocs.length; docIdx++) {
+				totalPageCount = pdfDocs[docIdx].numPages;
+				for (var pageIdx = 0; pageIdx < totalPageCount; pageIdx++) {
+					var div = document.createElement("div");
+					div.setAttribute("id", "page-" + divCount);
+					div.setAttribute("style", "position: relative");
+					container.appendChild(div);
+ 
+					var icanvas = document.createElement("canvas");
+					icanvas.setAttribute("id", "canvas-" + divCount)
+					icanvas.setAttribute("class", "final_pdf")
+					icanvas.setAttribute("style", "align: center");
+					icanvas.setAttribute("style", "border: 1px solid black");
+					div.appendChild(icanvas);
+					singlerenderPage(docIdx,pageIdx,icanvas);
+				}
+			}
+		});
+	}
+ 
+ 	function singlerenderPage(doc,num,icanvas) {
+	ipageRendering = true;
+	pdfDocs[doc].getPage(num+1).then(function(page) {
+ 
+		var viewport = page.getViewport({ scale: scale });
+ 
+		icanvas.height = viewport.height;
+		icanvas.width = viewport.width;
+		ictx = icanvas.getContext("2d");
+ 
+		var irenderContext = {
+			canvasContext: ictx,
+			viewport: viewport,
+		};
+ 
+		var irenderTask = page.render(irenderContext);
+ 
+	});
+}
+ 	function fillInPatientBanner() {
+ 
+	 	var cmv_url 	= resultData.RESULTDATA.CMV_URL;
+		var event_id 	= resultData.RESULTDATA.EVENT_ID;
+ 
+ 
+ 		for (var i = 0; i < resultData.RESULTDATA.EVENT_LIST.length; i++) {
+ 			//alert(resultData.RESULTDATA.EVENT_LIST[i].CMV_URL);
+ 			var cmv_url 	= resultData.RESULTDATA.EVENT_LIST[i].CMV_URL;
+ 			urls.push(cmv_url);
+ 			//alert(cmv_url)
+ 			requestAsync.open("GET",cmv_url,false);
+			window.location = "javascript:MPAGES_SVC_AUTH(requestAsync)";
+			requestAsync.send();
+ 
+		}
+ 
+		loadpdfurl();
+ 
+ 	}
+ 
+ 
+ 
+ 
+ 
+ 
+</script>
+</head>
+<body onload="javascript:fillInPatientBanner();">
+ 
+<div id=body_font>
+<br/>
+<table width=100%>
+	<tr>
+		<!--td align=left><button id="print_all" class="myButton" onclick=javascript:printDocument('pdfDocument');>Print All Documents</button></td-->
+		<td width=30%>&nbsp</td>
+	</tr>
+</table>
+<br/><br/>
+<div id="PDFDiv">
+</div>
+</div>
+<br/><br/>
+ 
+<table id=patientdata>
+<tr><td colspan=2><div id=debug_font><span id=patientdatajson></span></div></td></tr>
+<tr><td colspan=2><div id=debug_font><span id=resultdatajson></span></div></td></tr>
+<tr><td colspan=2><div id=debug_font><div id=PDFDiv></div></div></td></tr>
+</table>
+</body>
+</html>
