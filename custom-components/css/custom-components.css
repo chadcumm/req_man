@@ -1,0 +1,90 @@
+.ltd-container{
+    white-space:nowrap;
+    overflow-x:scroll;
+    overflow-y: hidden;
+}
+
+.ltd-box{
+    width: 100%;
+    table-layout: fixed;
+}
+
+.ltd-label-column{
+    width:180px;
+    white-space: nowrap;
+}
+
+.ltd-data-column{
+    width:120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-wrap: normal
+}
+
+.ltd-row0{
+    background-color: #CDDCEE;
+}
+
+.ltd-tr:nth-of-type(odd){
+    background-color:#EDEDED;
+}
+
+.ltd-mpage-no-results {color:#aaa;}
+
+/******* Begin Transfusion Info Summary *******/
+/*Component table styles*/
+.theTable .hdr{color:#505050;font-size:10px;line-height:1.2em;background-color:#f6f6f6}
+.theTable .content-hdr{background:#f6f6f6;border:1px solid #DDD;overflow:hidden;}
+.theTable .list-as-table .content-body{border:1px solid #DDD}
+.theTable .list-as-table .content-hdr{border:1px solid #DDD;border-bottom:0}
+.theTable .list-as-table .hdr dd{border-left:1px solid #DDD}
+.theTable .list-as-table .hdr dd:first-child{border-left:none}
+.theTable .list-as-table .result-info>dd{padding:2px 6px}
+.theTable .list-as-table .sub-sec-hd{font-size:12px;font-weight:normal;color:#3e3e3e;background:#b6c9db;padding:2px 0 2px 6px;border-top:1px solid #e9eff4;border-bottom:1px solid #9aabbb;zoom:1;overflow:hidden}
+.theTable .list-as-table .sub-sec-title{color:#3d3d3d}
+.theTable .list-as-table .sub-sec-total{font-size:11px;font-weight:normal}
+.theTable .list-as-table .sub-sec-display{font-weight:bold}
+.theTable .list-as-table .sub-sec-hd-tgl{background:url(../img/sprite_green.png) -36px 0;font-size:1px;color:#cddcee;height:7px;width:7px;float:left;cursor:pointer;margin:0;margin-top:5px;padding-right:3px}
+.theTable .list-as-table .closed .sub-sec-hd-tgl{background:url(../img/sprite_green.png) -28px 0;height:9px;width:5px;margin-top:4px}
+.theTable .list-as-table.grouping-applied .result-info dd:first-child,.theTable .wf .list-as-table.grouping-applied .hdr dd:first-child{padding-left:16px}
+.theTable .list-as-table .hdr{padding-bottom:0}
+.theTable .list-as-table .hdr.sort-control{border-bottom:0}
+.theTable .list-as-table .result-info,.theTable .list-as-table .hdr{overflow:hidden;word-wrap:break-word}
+.theTable .list-as-table .result-info>dt,.theTable .list-as-table .hdr>dt{display:none}
+.theTable .list-as-table .result-info>dd,.theTable .list-as-table .hdr>dd{box-sizing:border-box;position:relative;float:left;-moz-box-sizing:border-box}
+.theTable .list-as-table .result-info>dd:nth-of-type(1):before,.theTable .list-as-table .hdr>dd:nth-of-type(1):before{display:none}
+.theTable .list-as-table .header-item-display{width:100%}
+.theTable .hdr.sort-control{padding-top:0;padding-bottom:0;border-bottom:1px solid #ededed}
+.theTable .hdr.sort-control>*{padding:6px 6px 2px}
+.theTable .hdr .sort-option:hover{background-color:#edefef}
+.theTable .sort-option{cursor:pointer}
+.theTable .sort-asc{background:url(../img/5322_up.png) no-repeat center 2px}
+.theTable .sort-desc{background:url(../img/5322_down.png) no-repeat center 2px}
+.theTable .hdr.shifted{margin-right:17px;}
+.theTable .header-item{padding:6px auto 6px auto;}
+.theTable .touch-mode .component-table .hdr>dd{padding:1.4em 6px;}
+.theTable .touch-mode .component-table .result-info{padding:0.75em 0;}
+.theTable .component-table .sub-sec-display{cursor: pointer;}
+.theTable .component-table .sub-sec-hd{cursor: pointer;}
+.theTable .result-info.even {background-color:#E8EBF5;}
+.theTable .mpage-no-results {color:#aaa;font-weight:bold;}
+
+.theTable .component-table {display:table;table-layout:fixed;border:1px solid #DDD;}
+.theTable .component-table-no-results .component-table {border:none;}
+.theTable .content-hdr,.theTable .content-body {display:table-row-group;}
+.theTable .content-hdr dd {border-bottom:1px solid #DDD;}
+.theTable .component-table dl {display:table-row;}
+.theTable .component-table dl dd {display:table-cell;}
+.theTable .list-as-table .result-info>dd,.theTable .list-as-table .hdr>dd {float:none;}
+
+.theTable .component-table{width:100%}
+.phsa_cd_transfusion_info_div{border:1px solid #ddd; max-height: 50em; overflow:auto;}
+.phsa_cd_group_screen_div,.phsa_cd_blood_product_div{padding-bottom:1%; border-bottom:1px solid #000; vertical-align: center;}
+.phsa_cd_group_screen_div_header,.phsa_cd_blood_product_div_header,.phsa_cd_transfusion_reaction_div_header{padding-bottom:1%;padding-top:1%;text-decoration: underline;font-weight: bold; font-size:1.2em;}
+.phsa_cd_group_screen_val{padding-left: 1%;}
+.phsa_cd_product_number{max-width:30%;width:30%;}
+.phsa_cd_unit_division{max-width:10%;width:10%;}
+.phsa_cd_product_name,.phsa_cd_unit_status,.phsa_cd_status_dt,.phsa_cd_date_time{max-width:20%;width:20%;}
+.phsa_cd_test,.phsa_cd_result{max-width:40%;width:40%;}
+/******* End Transfusion Info Summary *******/
