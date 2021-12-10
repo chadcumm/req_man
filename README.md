@@ -14,16 +14,19 @@ Requisition Manager and Integrated Print-to-PDF
 #### BC_MMF_PUBLISH_CE
 
 ### Operations
-
 #### BC_COMBINE_REQ_OPS
 
 ### Discern Expert
-
 #### BC_EKS_COMBINE_REQS
+
+### Common Files
+### bc_dm_info.inc
+#### bc_play_routines.inc
+#### bc_play_req.inc
 
 ## Integrated Print-to-PDF (iPPDF)
 
-### Scripts
+### Discern Explorer
 #### BC_ALL_MP_GET_PDF
 #### BC_ALL_MP_GET_PDF_DEV
 #### BC_ALL_MP_GET_PDF_RM
@@ -33,6 +36,46 @@ Requisition Manager and Integrated Print-to-PDF
 
 ### HTML
 #### ippdf_print_to_pdf_new.html
+
+### Javascript
+#### custom-components.js
+
+### CSS
+#### custom-components.css
+
+## Requisition Manager
+### Discern Explorer
+#### MP_REQUISITION_MANAGER
+#### REQ_CUST_MP_GET_PERSON
+#### RM_ALL_MP_PDF_VIEWER
+#### BC_ALL_MP_PATIENT_BANNER 
+    Also used in iPPDF
+#### REQ_CUST_MP_FILTER_SETS
+#### REQ_CUST_MP_ADD_FILTER_SET
+#### REQ_CUST_MP_DEL_FILTER_SET
+#### REQ_CUST_MP_REQ_BY_LOC_DT
+#### BC_ALL_MP_ADD_REQ_COMMENT
+#### BC_ALL_MP_ADD_REQ_STATUS
+#### DEV_ALL_MP_PDF_URL
+#### DEV_CUST_MP_GET_COMMENT_HIST
+#### BC_ALL_MP_MULTI_PDF_VIEWER
+#### BC_ALL_MP_ADD_PRINT_STATUS
+
+#### Common Files
+##### bc_play_routines.inc
+##### bc_play_req.inc
+##### req_cust_mp_task_by_loc_dt.inc
+##### mp_requisition_manager.inc
+
+### HTML
+#### rm_print_to_pdf_new.html
+#### rm_print_to_pdf_muliple_new.html
+
+### Javascript
+#### 
+
+### CSS
+#### 
 
 ## Support Tools
 
@@ -49,4 +92,6 @@ Requisition Manager and Integrated Print-to-PDF
 
 ## Reporting
 
+### Discern Expert
+#### BC_ALL_AUDIT_DASHBOARD_BCCVA
 
