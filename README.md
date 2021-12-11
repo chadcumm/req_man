@@ -96,11 +96,13 @@ Requisition Manager and Integrated Print-to-PDF
 
 #### 2REQ_CUST_MP_REQ_BY_LOC_DT
     Driver for many reports.  This replicates the execution of RM.  Needs new naming convention
-
 #### BC_ALL_AUDIT_DASHBOARD_BCCVA
+#### RM_FULL_ORDER_REQ_AUDIT  
+#### BC_ALL_MP_GET_PDF_AUDIT
+
 
 ## Miscellaneous 
 
 ### RM_REG_REQ_BY_CONVERSATION
     Regenerate Requisitions by order conversation ID
-    
+
