@@ -105,4 +105,6 @@ Requisition Manager and Integrated Print-to-PDF
 
 ### RM_REG_REQ_BY_CONVERSATION
     Regenerate Requisitions by order conversation ID
-
+### RM_REG_REQ_BY_PATHWAY
+    Regenerate Requisitions by pathway ID
+### RM_FILTER_PUSH     
