@@ -329,25 +329,7 @@ call writeLog(build2("**********************************************************
 call writeLog(build2("**Global Process *********************************************"))
 call writeLog(build2("* START Validate Patient ************************************"))
 
-;Pass all Patients by Name
-set bc_common->valid_ind = 1
-
-
-select into "nl:"
-from person p
-plan p where p.person_id = bc_common->person_id
-detail
-	call writeLog(build2("--->",trim(p.name_full_formatted)))
-	;THIS WILL NOT PROCESS DEVELOPMENT PATIENTS, Turning off name validation for this script
-	
-	
-	if ((p.name_last_key = "CSTPDF"))
-		bc_common->valid_ind = 1
-	endif
-	
-with nocounter
-
-
+set bc_common->valid_ind = sValidatePatient(bc_common->person_id)
 
 call writeLog(build2("bc_common->location_cnt=",bc_common->location_cnt))
 call writeLog(build2("bc_common->valid_ind=",bc_common->valid_ind))
