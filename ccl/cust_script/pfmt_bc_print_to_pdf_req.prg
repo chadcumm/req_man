@@ -79,6 +79,7 @@ Mod   Mod Date    Developer              Comment
 										to it instead of creating a net new clinical_Event
 056   08/05/2021  Chad Cummings			included protocol_remain_ind flag in query to find protocol orders
 057   08/05/2021  Chad Cummings			do not process cancel events if the previous status was not future
+058   10/02/2021  Chad Cummings			CST-145166 Split ad hoc orders by collection date and time
 ******************************************************************************/
 drop program pfmt_bc_print_to_pdf_req:dba go
 create program pfmt_bc_print_to_pdf_req:dba
