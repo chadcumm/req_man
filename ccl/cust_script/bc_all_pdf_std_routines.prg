@@ -141,17 +141,27 @@ subroutine sValidatePatient(pPersonId)
     call sPDFRoutineLog(build2('start sValidatePatient(',trim(cnvtstring(pPersonId)),")"))
     ;set the patient to valid by default
     declare sValidPatientInd = i2 with noconstant(TRUE), protect
+
+    ;variables used to determine if the patient name matches the development definition
+    declare vDevLastNameMath = i2 with noconstant(0), protect
+    declare vDevFirstNameMath = i2 with noconstant(0), protect
+
+
     ;used to determine if script is running in a production domain.  Non-production domains will check for development patients
     declare sProductionEnvironment = i2 with noconstant(FALSE), protect
     ;record structure to hold the development patient name details
     free record temp_patient
     record temp_patient
         (
+            1 current_first_name = vc
+            1 current_last_name = vc
             1 last_name[*]
             2 value = vc
             1 first_name[*]
             2 value = vc
         ) with protect
+
+    declare d1seq = i4 with noconstant(0), protect
 
     if (substring(1,1,cnvtupper(curdomain)) = "P")
         set sProductionEnvironment = TRUE
@@ -159,47 +169,99 @@ subroutine sValidatePatient(pPersonId)
     call sPDFRoutineLog(build2('pPersonId=',pPersonId))
     call sPDFRoutineLog(build2('sProductionEnvironment=',sProductionEnvironment))
     if (sProductionEnvironment = FALSE)
-        ;script is running in a non-production environment, check if script should considered development patients
-        if (sIsDevelopmentMode(CURPROG) = TRUE)
-            ;script is in development mode, get development patient definitions
-            set stat = initrec(temp_patient)
-            select into "nl:"
-            from
-                code_value cv
-            plan cv 
-                where cv.code_set = bc_all_pdf_std_variables->code_set.printtopdf
-                and   cv.cdf_meaning in(^VALIDATION^)
-                and   cv.description in(
-                                             ^LAST_NAME^
-                                            ,^FIRST_NAME^
-                                        )
-                and   cv.active_ind = 1
-            order by
-                 cv.description
-                ,cv.code_value
-            head report
-                i = 0
-                j = 0
-                macro (AddLastName)
-                    j = (j + 1)
-                    stat = alterlist(temp_patient->last_name,j)
-                    temp_patient->last_name[j].value = cv.definition
-                endmacro
+        ;script is running in a non-production environment, get development patient definitions
+        set stat = initrec(temp_patient)
+        select into "nl:"
+        from
+            code_value cv
+        plan cv 
+            where cv.code_set = bc_all_pdf_std_variables->code_set.printtopdf
+            and   cv.cdf_meaning in(^VALIDATION^)
+            and   cv.description in(
+                                         ^LAST_NAME^
+                                        ,^FIRST_NAME^
+                                    )
+            and   cv.active_ind = 1
+        order by
+             cv.description
+            ,cv.code_value
+        head report
+            i = 0
+            j = 0
+            macro (AddLastName)
+                j = (j + 1)
+                stat = alterlist(temp_patient->last_name,j)
+                temp_patient->last_name[j].value = cv.definition
+            endmacro
 
-                macro (AddFirstName)
-                    i = (i + 1)
-                    stat = alterlist(temp_patient->first_name,i)
-                    temp_patient->first_name[i].value = cv.definition
-                endmacro
-            detail  
-                case (cv.description)  
-                    of ^FIRST_NAME^:    AddFirstName
-                    of ^LAST_NAME^:     AddLastName
-                endcase
-            with nocounter
-            call sPDFRoutineLog('temp_patient','record')
+            macro (AddFirstName)
+                i = (i + 1)
+                stat = alterlist(temp_patient->first_name,i)
+                temp_patient->first_name[i].value = cv.definition
+            endmacro
+        detail  
+            case (cv.description)  
+                of ^FIRST_NAME^:    AddFirstName
+                of ^LAST_NAME^:     AddLastName
+            endcase
+        with nocounter
+
+        if ((size(temp_patient->last_name,5) = 0) or (size(temp_patient->first_name,5) = 0))  
+            call sPDFRoutineLog(build2('->no validation patient definitions found'))  
+            call sPDFRoutineLog(build2('end sValidatePatient(',trim(cnvtstring(pPersonId)),")"))
+            return (sValidPatientInd)
         endif
-    endif
+
+        ;Pull in name from the database based on the person_id
+        select into "nl:"
+        from    
+            person p
+        plan p
+            where p.person_id = pPersonId
+        detail
+            temp_patient->current_first_name = p.name_first_key
+            temp_patient->current_last_name = p.name_last_key
+        with nocounter
+
+        ;determine if the last name matches one of the defined valiation patients
+        select into "nl:"
+        from
+             (dummyt d1 with seq=size(temp_patient->last_name,5))
+        plan d1
+            where initarray(d1seq,d1.seq)
+            and   operator(temp_patient->current_last_name,"LIKE",notrim(patstring(temp_patient->last_name[d1.seq].value,0)))
+        detail
+              vDevLastNameMath = TRUE
+            call sPDFRoutineLog(build2('->last_name match=',temp_patient->last_name[d1.seq].value))
+        with nocounter
+
+        ;determine if the first name matches one of the defined valiation patients
+        select into "nl:"
+        from
+             (dummyt d1 with seq=size(temp_patient->first_name,5))
+        plan d1
+            where initarray(d1seq,d1.seq)
+            and   operator(temp_patient->current_first_name,"LIKE",notrim(patstring(temp_patient->first_name[d1.seq].value,0)))
+        detail  
+            vDevFirstNameMath = TRUE
+            call sPDFRoutineLog(build2('->first_name match=',temp_patient->first_name[d1.seq].value))
+        with nocounter
+
+        call sPDFRoutineLog(build2('->vDevFirstNameMath=',vDevFirstNameMath))
+        call sPDFRoutineLog(build2('->vDevLastNameMath=',vDevLastNameMath))
+
+        if (sIsDevelopmentMode(CURPROG) = TRUE)
+            if ((vDevFirstNameMath = FALSE) or (vDevLastNameMath = FALSE))
+                set sValidPatientInd = FALSE
+            endif
+        else
+            if ((vDevFirstNameMath = TRUE) and (vDevLastNameMath = TRUE))
+                set sValidPatientInd = FALSE
+            endif
+        endif
+        call sPDFRoutineLog('temp_patient','record')
+    endif ;sProductionEnvironment = FALSE
+    call sPDFRoutineLog(build2('->sValidPatientInd=',sValidPatientInd))
     call sPDFRoutineLog(build2('end sValidatePatient(',trim(cnvtstring(pPersonId)),")"))
     return (sValidPatientInd)
 end ;sValidatePatient
