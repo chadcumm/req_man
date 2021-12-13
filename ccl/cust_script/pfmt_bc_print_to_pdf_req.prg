@@ -125,6 +125,8 @@ endif
 %i cust_script:bc_play_routines.inc
 %i cust_script:bc_play_req.inc
 
+execute bc_all_pdf_std_routines
+
 call bc_custom_code_set(0)
 call bc_log_level(0)
 call bc_check_validation(0)
@@ -323,25 +325,7 @@ declare m = i2 with noconstant(0)
 call writeLog(build2("*************************************************************"))
 call writeLog(build2("* START Validate Patient ************************************"))
 
-
-;Pass all Patients by Name
-set bc_common->valid_ind = 1
-
-
-select into "nl:"
-from person p
-plan p where p.person_id = bc_common->person_id
-detail
-	call writeLog(build2("--->",trim(p.name_full_formatted)))
-	;THIS WILL NOT PROCESS PLAY PATIENTS, Turning off name validation for this script
-	
-	
-	if ((p.name_first_key = "DEVELOPMENT*") and (p.name_last_key = "CSTPDF"))
-		bc_common->valid_ind = 0
-	endif
-	
-with nocounter
-
+set bc_common->valid_ind = sValidatePatient(bc_common->person_id)
 
 call writeLog(build2("* Validate Location=",cnvtstring(bc_common->location_cnt)))
 call writeLog(build2("* orderlist=",cnvtstring(size(requestin->request->orderlist,5))))
