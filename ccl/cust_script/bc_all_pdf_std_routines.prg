@@ -19,6 +19,7 @@ Rev  Date         Jira       Programmer             Comment
 drop program bc_all_pdf_std_routines go
 create program bc_all_pdf_std_routines
 
+
 record bc_all_pdf_std_variables
 (
     1 code_set
@@ -35,17 +36,20 @@ declare sPDFRoutineLog(pMessage=vc,pParam=vc(value,'message')) = null with copy,
 call sPopulateRecVariables(null)
 
 ;==========================================================================================
-; Capture and reporting logging for debug and testing
+; Capture and report logging for debug and testing
 ; pMessage = Message to log
 ; pParam = if set to 'record' then the pMessage is a record structure to be echorecord
+; 
+; USAGE: call sPDFRoutineLog("record_structure","RECORD") 
+;        call sPDFRoutineLog("Log Message") 
 ;==========================================================================================
 subroutine sPDFRoutineLog(pMessage,pParam)
     declare vMessage = vc with constant(pMessage), protect
     declare vParam = vc with constant(pParam), protect
     declare vEchoParser = vc with noconstant(" "), protect
 
-    if (sPDFRoutineDebug(0))
-        if (cnvtupper(vParam) = cnvtupper('RECORD'))
+    if (sPDFRoutineDebug(0)) ;check to make sure debug is on first
+        if (cnvtupper(vParam) = cnvtupper('RECORD')) ;check to see if the message is actually a record structure
             set vEchoParser = concat(^call echorecord(^,trim(vMessage),^) go^)
             call echo(trim(vEchoParser))
             call parser(vEchoParser)
@@ -58,6 +62,8 @@ end ;sPDFRoutineLog
 
 ;==========================================================================================
 ; Check if the debug_ind variable is defined and set to 1 to turn on echos
+; 
+; USAGE: set DEBUG = sPDFRoutineDebug(null)
 ;==========================================================================================
 subroutine sPDFRoutineDebug(null)
     declare pDebugVar = f8 with noconstant(FALSE), protect
@@ -73,7 +79,9 @@ end ;sPDFRoutineDebug
 
 ;==========================================================================================
 ; Complete the bc_all_pdf_std_variables record structure.  This subroutine is executed with
-; bc_all_pdf_std_routines by default
+; bc_all_pdf_std_routines by default and sets up variables to be used in the calling scripts
+;
+; USAGE: call sPopulateRecVariables(null)
 ;==========================================================================================
 subroutine sPopulateRecVariables(null)
     call sPDFRoutineLog(build2('start sPopulateRecVariables(',null,")"))
@@ -86,6 +94,8 @@ end ;sPopulateRecVariables
 
 ;==========================================================================================
 ; Find and return the Print-to-PDF custom code set number
+;
+; USAGE: set CODE_SET = sPrinttoPDFCodeSet(null)
 ;==========================================================================================
 subroutine sPrinttoPDFCodeSet(null)
     call sPDFRoutineLog(build2('start sPrinttoPDFCodeSet(',null,")"))
@@ -133,9 +143,18 @@ end ;sIsDevelopmentMode
 
 ;==========================================================================================
 ; Determine if the patient is valid patient for processing.  This does not reference
-; encounter location and is only used to validate by name for development processing
+; encounter location and is only used to validate by name for development processing.  
+;
+; USAGE: set VALID = sValidatePatient(person_id) 
+; 
 ; Print-to-PDF Code Set: 
-; Reserved Variables Using Discern Explorer https://wiki.cerner.com/x/qx9kAQ
+;   Requires as least one active code value with the following CDF
+;   meaning and Description to process: VALIDATION, LAST_NAME; VALIDATION, FIRST_NAME
+;   The Definition of each code value will be used to match the patient name.  If both the 
+;   first and last name of the patient match (wildards acceptable) and the current script is
+;   a development script the patient is valid.  If the script is not a development script and the
+;   name matches the patient is not marked as valid.  
+; 
 ;==========================================================================================
 subroutine sValidatePatient(pPersonId)
     call sPDFRoutineLog(build2('start sValidatePatient(',trim(cnvtstring(pPersonId)),")"))
@@ -156,9 +175,9 @@ subroutine sValidatePatient(pPersonId)
             1 current_first_name = vc
             1 current_last_name = vc
             1 last_name[*]
-            2 value = vc
+                2 value = vc
             1 first_name[*]
-            2 value = vc
+                2 value = vc
         ) with protect
 
     declare d1seq = i4 with noconstant(0), protect
@@ -265,7 +284,6 @@ subroutine sValidatePatient(pPersonId)
     call sPDFRoutineLog(build2('end sValidatePatient(',trim(cnvtstring(pPersonId)),")"))
     return (sValidPatientInd)
 end ;sValidatePatient
-
 
 end
 go
