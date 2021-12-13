@@ -27,6 +27,7 @@ var pwx_global_ClerStatusArr = new Array;
 var pwx_global_typeArr = new Array;
 var pwx_global_subtypeArr = new Array;
 var pwx_global_priorityArr = new Array;
+var pwx_global_looseArr = new Array;
 var pwx_global_orderprovArr = new Array;
 var pwx_global_orderprovFiltered = 0;
 var pwx_global_expanded = 0;
@@ -462,6 +463,7 @@ function RenderPWxFrame() {
 	pwxfilterbarHTML.push('<dt id="pwx_task_type_filter"></dt>');
 	pwxfilterbarHTML.push('<dt id="pwx_task_subtype_filter"></dt>');
 	pwxfilterbarHTML.push('<dt id="pwx_task_priority_filter"></dt>');
+    pwxfilterbarHTML.push('<dt id="pwx_loose_req_filter"></dt>');
 	
 	pwxfilterbarHTML.push('</div>') //pwx_frame_advanced_filters_container
 	pwxfilterbarHTML.push('</dl>');
@@ -508,6 +510,7 @@ function RenderPWxFrame() {
 	var typeElem = $('#pwx_task_type_filter')
 	var subtypeElem = $('#pwx_task_subtype_filter')
 	var priorityElem = $('#pwx_task_priority_filter')
+    var looseElem = $('#pwx_loose_req_filter')
 	var orderprovElem = $('#pwx_task_orderprov_filter')
 	var framecontentElem =  $('#pwx_frame_content')
 	
@@ -722,6 +725,50 @@ function RenderPWxFrame() {
 	priorityHTML.push('</select>');
 	$(priorityElem).html(priorityHTML.join(""))
 	
+
+    //loose req list
+    var looseHTML = [];
+	var pwx_global_looseArr = [];
+	if (pwx_global_looseArr.length > 0) {
+		if (filterdata.LOOSE_LIST.length > 0) {
+			looseHTML.push('<span style="vertical-align:30%;">','Loose Requisitions',': </span><select id="task_loose" name="task_loose" >');
+            looseHTML.push('<option value=""></option>');
+			for (var i = 0; i < filterdata.LOOSE_LIST.length; i++) {
+				var type_match = 0;
+				for (var y = 0; y < pwx_global_looseArr.length; y++) {
+					if (pwx_global_looseArr[y] == filterdata.LOOSE_LIST[i].DISPLAY) {
+						type_match = 1;
+						break;
+					}
+				}
+				if (type_match == 1) {
+					looseHTML.push('<option selected="selected" value="', filterdata.TYPE_LIST[i].DEFINITION, '">', filterdata.TYPE_LIST[i].DISPLAY, '</option>');
+				}
+				else {
+					looseHTML.push('<option value="', filterdata.TYPE_LIST[i].DEFINITION, '">', filterdata.TYPE_LIST[i].DISPLAY, '</option>');
+				}
+			}
+			looseHTML.push('</select>');
+		}
+	}
+	else {
+		if (filterdata.LOOSE_LIST.length > 0) {
+			looseHTML.push('<span style="vertical-align:30%;">','Loose Requisitions',': </span><select id="task_loose" name="task_loose">');
+            looseHTML.push('<option value=""></option>');
+			for (var i = 0; i < filterdata.LOOSE_LIST.length; i++) {
+				if (filterdata.LOOSE_LIST[i].SELECTED == 1) {
+					looseHTML.push('<option selected="selected" value="', filterdata.LOOSE_LIST[i].DEFINITION, '">', filterdata.LOOSE_LIST[i].DISPLAY, '</option>');
+				}
+				else {
+					looseHTML.push('<option value="', filterdata.LOOSE_LIST[i].DEFINITION, '">', filterdata.LOOSE_LIST[i].DISPLAY, '</option>');
+				}
+			}
+			looseHTML.push('</select></dt>');
+		}
+	}
+	$(looseElem).html(looseHTML.join(""))
+
+
 	$('#pwx_task_pagingbar_printall').text('Print Selected');
 	$("#pwx_task_list_refresh_data").text('Refresh');
 	
@@ -745,7 +792,7 @@ function RenderPWxFrame() {
 	$("#task_type").multiselect({
 		height: "300",
 		minWidth: 250,
-		classes: "pwx_select_box",
+		classes: "pwx_select_type",
 		noneSelectedText: "Select Type",
 		selectedList: 0,
 		selectedText: function(numChecked, numTotal, checkedItems){
@@ -817,7 +864,14 @@ function RenderPWxFrame() {
 			placeholder: "Search"
 		});
 		
-	
+    $("#task_loose").multiselect({
+        height: "200",
+        classes: "pwx_select_box",
+        noneSelectedText: "Select Location",
+        multiple: false,
+        selectedList: 1
+    });
+
 	$('#pwx_task_list_refresh_data').on('click', function () {
 		GetRequisitionsData('run from refresh icon');
 	});
@@ -1066,6 +1120,14 @@ function RenderPWxFrame() {
 		var value_of_taskreportrange = $('#taskreportrange_hidden').text();
 		var value_of_requestedreportrange = $('#requestedreportrange_hidden').text();
 		
+        //loose requisitions
+		var array_of_task_loose_values = $("#task_loose").multiselect("getChecked").map(function () {
+			return this.value;
+		}).get();
+		if (array_of_task_loose_values === undefined || array_of_task_loose_values.length == 0) {
+			array_of_task_loose_values = 0;
+		}
+		
 		var sendArr = [	"^MINE^", 
 						js_criterion.CRITERION.PRSNL_ID + ".0", 
 						js_criterion.CRITERION.POSITION_CD + ".0"
@@ -1077,15 +1139,16 @@ function RenderPWxFrame() {
 						, "value(" + array_of_task_patient_values + ")"
 						, "value(" + array_of_task_provider_values + ")"
 						, "^" + value_of_taskreportrange + "^"
-						, "^" + value_of_requestedreportrange + "^"];
+						, "^" + value_of_requestedreportrange + "^"
+                        , "^" + array_of_task_loose_values + "^"];
 	
-		
+	
 		$('#pwx_frame_content').empty();
 		$('#pwx_frame_content').html('<div id="pwx_loading_div"><span class="pwx_loading-spinner"></span><br/><span id="pwx_loading_div_time">0 ' + amb_i18n.SEC + '</span></div>');
 		
 		start_pwx_timer()
 		var start_ccl_timer = new Date();
-		
+		//prompt('sendArr',sendArr )
 		PWX_CCL_Request("req_cust_mp_req_by_loc_dt", sendArr, true, function () {
 
 			pwx_global_orderprovArr = []

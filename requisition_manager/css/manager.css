@@ -85,6 +85,7 @@
 #pwx_task_type_filter{float:left; display:inline-block;padding-left: 6px; padding-right: 6px;padding-top: 6px;color:#000000;}
 #pwx_task_subtype_filter{float:left; display:inline-block;padding-left: 6px; padding-right: 6px;padding-top: 6px;color:#000000;}
 #pwx_task_priority_filter{float:left; display:inline-block;padding-left: 6px; padding-right: 6px;padding-top: 6px;color:#000000;}
+#pwx_loose_req_filter{float:left; display:inline-block;padding-left: 6px; padding-right: 6px;padding-top: 6px;color:#000000;}
 #pwx_task_orderprov_filter{float:left; display:inline-block; padding-left: 6px; padding-right: 6px;padding-top: 6px;color:#000000;}
 #pwx_task_get_filter{float:left; display:inline-block; padding-right: 6px;padding-top: 6px;color:#000000;}
 #pwx_task_save{float:right; display:inline-block;padding-left: 6px; padding-right: 6px;padding-top: 6px;}

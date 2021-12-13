@@ -1,23 +1,23 @@
 /*****************************************************************************
 ******************************************************************************
-
+ 
   Author:             Chad Cummings
   Date Written:       03/01/2019
-  Solution:           
-  Source file name:   req_cust_mp_task_by_loc_dt.prg
-  Object name:        req_cust_mp_task_by_loc_dt
+  Solution:
+  Source file name:   req_cust_mp_req_by_loc_dt.prg
+  Object name:        req_cust_mp_req_by_loc_dt
   Request #:
-
+ 
   Program purpose:
-
-  Executing from:     
-
-  Special Notes:       
-
+ 
+  Executing from:
+ 
+  Special Notes:
+ 
 ******************************************************************************
   GENERATED MODIFICATION CONTROL LOG
 ******************************************************************************
-
+ 
 Mod   Mod Date    Developer              Comment
 ---   ----------  --------------------  --------------------------------------
 000   01/20/2020  Chad Cummings			REMOVE OR UPDATE AFTER POC
@@ -28,15 +28,16 @@ Mod   Mod Date    Developer              Comment
 005   12/10/2020  Chad Cummings			Added priority and sub-type lists
 006   12/16/2020  Chad Cummings			Updated statuses to match Sprint 5
 007   01/05/2021  Chad Cummings			Subtype uses code set logic
-008   01/06/2021  Chad Cummings			Priority uses code set 
+008   01/06/2021  Chad Cummings			Priority uses code set
 009   03/12/2021  Chad Cummings			Converted to use location of order not encounter
 010   04/01/2021  Chad Cummings			Added View flag
 011   04/16/2021  Chad Cummings			Requested Start Date and Time * restricted to day only (no time)
 012   07/01/2021  Chad Cummings			updated maxvarlen to allow for more data
+013   11/01/2021  Chad Cummings			added loose requisition execution
 ******************************************************************************/
 DROP PROGRAM req_cust_mp_req_by_loc_dt GO
 CREATE PROGRAM req_cust_mp_req_by_loc_dt
- prompt 
+ prompt
 	"Output to File/Printer/MINE" = "MINE"
 	, "User ID:" = 0.0
 	, "Position Cd:" = 0.0
@@ -48,16 +49,18 @@ CREATE PROGRAM req_cust_mp_req_by_loc_dt
 	, "LOC_PATIENT" = 0
 	, "LOC_PROVIDER" = 0
 	, "ORDER_DATE_LABEL" = ""
-	, "REQUESTED_DATE_LABEL" = "" 
-
-with OUTDEV, USER_ID, POSITION_CD, START_DT, END_DT, REQ_START_DT, REQ_END_DT, 
-	LOC_PROMPT, LOC_PATIENT, LOC_PROVIDER, ORDER_DATE_LABEL, REQUESTED_DATE_LABEL
-  
+	, "REQUESTED_DATE_LABEL" = ""
+	, "LOOSE_OPTION" = ""
+ 
+with OUTDEV, USER_ID, POSITION_CD, START_DT, END_DT, REQ_START_DT, REQ_END_DT,
+	LOC_PROMPT, LOC_PATIENT, LOC_PROVIDER, ORDER_DATE_LABEL, REQUESTED_DATE_LABEL,
+	LOOSE_OPTION
+ 
 call echo(build("loading script:",curprog))
 declare nologvar = i2 with noconstant(1)	;do not create log = 1		, create log = 0
 declare debug_ind = i2 with noconstant(0)	;0 = no debug, 1=basic debug with echo, 2=msgview debug ;000
 declare rec_to_file = i2 with noconstant(0)
-
+ 
 select into "nl:"
 from
 	 code_value_set cvs
@@ -80,13 +83,13 @@ head cv.cdf_meaning
 		nologvar = 0
 	endif
 with nocounter
-
+ 
 %i cust_script:bc_play_routines.inc
 %i cust_script:bc_play_req.inc
 %i cust_script:req_cust_mp_task_by_loc_dt.inc
-
+ 
 call bc_custom_code_set(0)
-
+ 
 FREE RECORD record_data
 RECORD record_data (
   1 date_used = i2
@@ -250,6 +253,17 @@ RECORD record_data (
    2 group[*]
     3 priority = vc
     3 selected = i2
+  /* start 013 */
+  1 loose_list[*]
+	2 command = vc
+	2 display = vc
+	2 definition = vc
+	2 code_value = f8
+	2 loose_req_loc = vc
+	2 loose_apt_loc = vc
+	2 valid_ind = i2
+	2 selected = i2
+  /* end 013 */
   1 timer_cnt = i2
   1 timer_final = vc
   1 timer_qual[*]
@@ -266,12 +280,12 @@ RECORD record_data (
       3 targetobjectname = c25
       3 targetobjectvalue = vc
 )
-
+ 
 record 1120120request (
- 1 event_qual [*]   
-  2 event_id = f8   
+ 1 event_qual [*]
+  2 event_id = f8
 )
-
+ 
 DECLARE log_program_name = vc WITH protect ,noconstant ("" )
 DECLARE log_override_ind = i2 WITH protect ,noconstant (0 )
 SET log_program_name = curprog
@@ -354,8 +368,8 @@ DECLARE 27112_required = f8 WITH public ,constant (uar_get_code_by ("MEANING" ,2
 DECLARE abn_status_meaning = vc WITH constant ("ABNSTATUS" )
 DECLARE start_parser = vc WITH public ,noconstant ("0" )
 DECLARE end_parser = vc WITH public ,noconstant ("0" )
-
-
+ 
+ 
 DECLARE encntr_location_parser = vc WITH public ,noconstant ("1=1" )
 DECLARE task_type_parser = vc WITH public ,noconstant ("1=1" )
 DECLARE task_type_cv_parser = vc WITH public ,noconstant ("1=1" )
@@ -378,20 +392,20 @@ DECLARE confid_security_parser = vc WITH public ,noconstant ("1=1" )
 DECLARE indx_type = i4 WITH protect ,noconstant (0 )
 DECLARE logging = i4 WITH protect ,noconstant (0 )
 declare replace_string = vc with protect, noconstant("")
-
+ 
 declare notfnd = vc with constant("<not found>")
 declare order_string = vc with noconstant(" ")
 declare i = i4 with noconstant(0)
 declare k = i4 with noconstant(0)
 declare j = i4 with noconstant(0)
 declare pos = i4 with noconstant(0)
-	
+ 
 CALL log_message (concat ("Begin script: " ,log_program_name ) ,log_level_debug )
 SET record_data->status_data.status = "F"
 set record_data->error_message = "Current Filter Settings Returned No Results"
-
+ 
 SET record_data->allow_req_print = 0
-
+ 
 set record_data->timer_cnt = (record_data->timer_cnt + 1)
 set stat = alterlist(record_data->timer_qual,record_data->timer_cnt)
 set record_data->timer_qual[record_data->timer_cnt].start_time = cnvtdatetime(curdate,curtime3)
@@ -401,13 +415,86 @@ set record_data->timer_qual[record_data->timer_cnt].elapsed = datetimediff(
 	 record_data->timer_qual[record_data->timer_cnt].end_time
 	,record_data->timer_qual[record_data->timer_cnt].start_time
 	,6)
-	
+ 
+ 
+ 
+ 
+/* start 013 */
+set record_data->timer_cnt = (record_data->timer_cnt + 1)
+set stat = alterlist(record_data->timer_qual,record_data->timer_cnt)
+set record_data->timer_qual[record_data->timer_cnt].start_time = cnvtdatetime(curdate,curtime3)
+set record_data->timer_qual[record_data->timer_cnt].section = "Loose Options"
+declare loose_executed = i2 with noconstant(0)
+ 
+select into "nl:"
+from
+	 code_value cv
+	,code_value_extension cve
+plan cv
+	where cv.code_set = bc_common->code_set
+	and   cv.cdf_meaning = "LOOSE_REPORT"
+	and   cv.active_ind = 1
+join cve
+	where cve.code_value = cv.code_value
+	and   cve.code_set = cv.code_set
+	and   cve.field_name in(
+								 "LOOSE_APT_LOC"
+								,"LOOSE_REQ_LOC"
+							)
+order by
+	 cv.code_value
+head report
+	cnt = 0
+head cv.code_value
+	cnt = (cnt + 1)
+	stat = alterlist(record_data->loose_list,cnt)
+	record_data->loose_list[cnt].display			= cv.display
+	record_data->loose_list[cnt].definition		= cv.definition
+	record_data->loose_list[cnt].code_value		= cv.code_value
+detail
+	case (cve.field_name)
+		of "LOOSE_REQ_LOC":	record_data->loose_list[cnt].loose_req_loc = cve.field_value
+		of "LOOSE_APT_LOC":	record_data->loose_list[cnt].loose_apt_loc = cve.field_value
+	endcase
+foot cv.code_value
+	if ((record_data->loose_list[cnt].loose_req_loc > " ") and (record_data->loose_list[cnt].loose_apt_loc > " "))
+		record_data->loose_list[cnt].valid_ind = 1
+		record_data->loose_list[cnt].command = build2(
+									 				^execute BC_ALL_SCH_LOOSE_ORD ^
+													,^"nl:",^
+													,record_data->loose_list[cnt].loose_req_loc,^,^
+													,record_data->loose_list[cnt].loose_apt_loc,^ go^)
+	endif
+	if (cv.definition = $LOOSE_OPTION)
+		record_data->loose_list[cnt].selected = 1
+	endif
+foot report
+	null
+with nocounter
+ 
+for (i = 1 to size(record_data->loose_list,5))
+	if (record_data->loose_list[i].selected = 1)
+		call echo("calling loose request")
+		call echo(record_data->loose_list[i].command)
+		set trace recpersist
+		call parser(record_data->loose_list[i].command)
+		;call echorecord(OUTREC)
+		set trace norecpersist
+		set loose_executed = 1
+	endif
+endfor
+set record_data->timer_qual[record_data->timer_cnt].end_time = cnvtdatetime(curdate,curtime3)
+set record_data->timer_qual[record_data->timer_cnt].elapsed = datetimediff(
+	 record_data->timer_qual[record_data->timer_cnt].end_time
+	,record_data->timer_qual[record_data->timer_cnt].start_time
+	,6)
+/* end 013 */
+ 
+/* setup the patients */
 set record_data->timer_cnt = (record_data->timer_cnt + 1)
 set stat = alterlist(record_data->timer_qual,record_data->timer_cnt)
 set record_data->timer_qual[record_data->timer_cnt].start_time = cnvtdatetime(curdate,curtime3)
 set record_data->timer_qual[record_data->timer_cnt].section = "Patient"
-
-/* setup the patients */
 declare patient_parser = vc with public ,noconstant ("" )
 record temp_patient
 (
@@ -416,9 +503,35 @@ record temp_patient
 	 2 name = vc
 	 2 person_id = f8
 ) with protect
-
+ 
+if (loose_executed = 1)
+	if (outrec->qual_cnt > 0)
 select into "nl:"
 from
+			(dummyt d1 with seq = outrec->qual_cnt)
+			,person p
+		plan d1
+			where outrec->qual[d1.seq].loose_ind = 1
+		join p
+			where p.person_id = outrec->qual[d1.seq].person_id
+		order by
+			outrec->qual[d1.seq].person_id
+		head report
+			null
+		head p.person_id
+			temp_patient->cnt = (temp_patient->cnt + 1)
+			stat = alterlist(temp_patient->list,temp_patient->cnt)
+			temp_patient->list[temp_patient->cnt].person_id = p.person_id
+			temp_patient->list[temp_patient->cnt].name = p.name_full_formatted
+		with nocounter
+	else
+		set temp_patient->cnt = (temp_patient->cnt + 1)
+		set stat = alterlist(temp_patient->list,temp_patient->cnt)
+		set temp_patient->list[temp_patient->cnt].person_id = 0.0
+	endif
+else
+	select into "nl:"
+	from
 	person p
 plan p
 	where p.person_id = $LOC_PATIENT
@@ -433,8 +546,9 @@ head p.person_id
 	temp_patient->list[temp_patient->cnt].person_id = p.person_id
 	temp_patient->list[temp_patient->cnt].name = p.name_full_formatted
 with nocounter
+endif
 call echorecord(temp_patient)
-
+ 
 if (temp_patient->cnt = 0)
 	set patient_parser = "1=1"
 else
@@ -447,7 +561,7 @@ else
 	endfor
 	set patient_parser = concat(patient_parser,^)^)
 endif
-
+ 
 call echo(build2("patient_parser=",trim(patient_parser)))
  
 set record_data->timer_qual[record_data->timer_cnt].end_time = cnvtdatetime(curdate,curtime3)
@@ -455,7 +569,7 @@ set record_data->timer_qual[record_data->timer_cnt].elapsed = datetimediff(
 	 record_data->timer_qual[record_data->timer_cnt].end_time
 	,record_data->timer_qual[record_data->timer_cnt].start_time
 	,6)
-
+ 
 set record_data->timer_cnt = (record_data->timer_cnt + 1)
 set stat = alterlist(record_data->timer_qual,record_data->timer_cnt)
 set record_data->timer_qual[record_data->timer_cnt].start_time = cnvtdatetime(curdate,curtime3)
@@ -465,7 +579,7 @@ set record_data->timer_qual[record_data->timer_cnt].elapsed = datetimediff(
 	 record_data->timer_qual[record_data->timer_cnt].end_time
 	,record_data->timer_qual[record_data->timer_cnt].start_time
 	,6)
-
+ 
 /* setup the providers */
 declare provider_parser = vc with public ,noconstant ("" )
 record temp_provider
@@ -475,7 +589,7 @@ record temp_provider
 	 2 name = vc
 	 2 person_id = f8
 ) with protect
-
+ 
 select into "nl:"
 from
 	prsnl p
@@ -493,7 +607,7 @@ head p.person_id
 	temp_provider->list[temp_provider->cnt].name = p.name_full_formatted
 with nocounter
 call echorecord(temp_provider)
-
+ 
 if (temp_provider->cnt = 0)
 	set provider_parser = "1=1"
 else
@@ -506,16 +620,16 @@ else
 	endfor
 	set provider_parser = concat(provider_parser,^)^)
 endif
-
+ 
 call echo(build2("provider_parser=",trim(provider_parser)))
-	
+ 
 set record_data->timer_cnt = (record_data->timer_cnt + 1)
 set stat = alterlist(record_data->timer_qual,record_data->timer_cnt)
 set record_data->timer_qual[record_data->timer_cnt].start_time = cnvtdatetime(curdate,curtime3)
 set record_data->timer_qual[record_data->timer_cnt].section = "Location"
-
+ 
 call gatherlocations(1.0) ;009
-
+ 
 /* setup the locations */
 declare location_parser = vc with public ,noconstant ("" )
 record temp_loc
@@ -526,7 +640,7 @@ record temp_loc
 	 2 location_cd = f8
 	 2 location_type_cd = f8
 ) with protect
-
+ 
 select into "nl:"
 from
 	location l
@@ -545,7 +659,7 @@ head l.location_cd
 	temp_loc->list[temp_loc->cnt].display = uar_get_code_display(l.location_cd)
 with nocounter
 call echorecord(temp_loc)
-
+ 
 if (temp_loc->cnt = 0)
 	set location_parser = "1=1"
 else
@@ -558,9 +672,9 @@ else
 	endfor
 	set location_parser = concat(location_parser,^)^)
 endif
-
+ 
 call echo(build2("location_parser=",trim(location_parser)))
-
+ 
 set encntr_location_parser = "e.loc_nurse_unit_cd in("
 set pos = 0
 for (j=1 to size(record_data->loc_list,5))
@@ -573,16 +687,17 @@ for (j=1 to size(record_data->loc_list,5))
 	endfor
 endfor
 set encntr_location_parser = concat(encntr_location_parser,^)^)
+ 
 call echo(build2("encntr_location_parser=",trim(encntr_location_parser)))
-
+ 
 set record_data->timer_qual[record_data->timer_cnt].end_time = cnvtdatetime(curdate,curtime3)
 set record_data->timer_qual[record_data->timer_cnt].elapsed = datetimediff(
 	 record_data->timer_qual[record_data->timer_cnt].end_time
 	,record_data->timer_qual[record_data->timer_cnt].start_time
 	,6)
-
-
-
+ 
+ 
+ 
 set record_data->timer_cnt = (record_data->timer_cnt + 1)
 set stat = alterlist(record_data->timer_qual,record_data->timer_cnt)
 set record_data->timer_qual[record_data->timer_cnt].start_time = cnvtdatetime(curdate,curtime3)
@@ -591,35 +706,35 @@ set record_data->timer_qual[record_data->timer_cnt].section = "Date"
 declare dtformat = vc 					with public ,constant ("DD-MMM-YYYY" )
 declare document_date_parser = vc 		with public ,noconstant ("1=1" )
 declare requested_date_parser = vc 		with public ,noconstant ("1=1" )
-
+ 
 set record_data->end_check 				=  $END_DT
 set record_data->start_check 			=  $START_DT
 set record_data->requested_end_check	=  $REQ_END_DT
 set record_data->requested_start_check	=  $REQ_START_DT
 set record_data->order_data_label		=  $ORDER_DATE_LABEL
 set record_data->requested_data_label	=  $REQUESTED_DATE_LABEL
-
+ 
 if (record_data->order_data_label in("Any Date"))
 	set stat = 0
 else
-
+ 
 	if ((record_data->start_check > " "))
 		set record_data->document_start_date = CNVTDATETIME(CNVTDATE2(record_data->start_check, dtformat),0)
 	endif
-	
+ 
 	if ((record_data->end_check > " "))
 		set record_data->document_end_date = CNVTDATETIME(CNVTDATE2(record_data->end_check, dtformat),2359)
 	endif
-	
+ 
 	if ((record_data->document_start_date > 0.0) and (record_data->document_end_date > 0.0))
-		set document_date_parser = build2(	 
+		set document_date_parser = build2(
 											 "pe.event_end_dt_tm between "
 											,"cnvtdatetime(record_data->document_start_date) "
 											,"and cnvtdatetime(record_data->document_end_date)"
 										 )
 	endif
 endif
-
+ 
 if (record_data->requested_data_label in("Any Date","Default Any Date"))
 	set record_data->requested_start_date = CNVTDATETIME(CNVTDATE2("01-JAN-1900", dtformat),0)
 	set record_data->requested_end_date = CNVTDATETIME(CNVTDATE2("31-DEC-2100", dtformat),2359)
@@ -627,10 +742,10 @@ else
 	if ((record_data->requested_start_check > " "))
 		set record_data->requested_start_date = CNVTDATETIME(CNVTDATE2(record_data->requested_start_check, dtformat),0)
 	endif
-	
+ 
 	if ((record_data->requested_end_check > " "))
 		set record_data->requested_end_date = CNVTDATETIME(CNVTDATE2(record_data->requested_end_check, dtformat),2359)
-	endif		
+	endif
 	set requested_date_parser = "filtered"
 endif
 call echo(build2("requested_date_parser=",trim(requested_date_parser)))
@@ -640,31 +755,42 @@ set record_data->timer_qual[record_data->timer_cnt].elapsed = datetimediff(
 	 record_data->timer_qual[record_data->timer_cnt].end_time
 	,record_data->timer_qual[record_data->timer_cnt].start_time
 	,6)
-	
+ 
 ;CALL gathertasktypes (0 )
 ;CALL gatherclericalstatus (0 )
 ;CALL gatheruserprefs ( $USER_ID ,"PWX_MPAGE_ORG_TASK_LIST_TYPES" )
-
-
-
-
+ 
+ 
+ 
+ 
 CALL gathertasksbylocdt (0)
-
+ 
  SUBROUTINE  gathertasksbylocdt (dummy )
   CALL log_message ("In GatherTasksByLocDt()" ,log_level_debug )
   DECLARE begin_date_time = dq8 WITH constant (cnvtdatetime (curdate ,curtime3 ) ) ,private
-  
+ 
   SET record_data->date_used = 1
-  
+ 
   CALL error_and_zero_check_rec (curqual ,"AMB_CUST_MP_TASK_LOC_DT" ,"GatherTasksByLocDt" ,1 ,0 ,record_data )
   CALL log_message (build ("Exit GatherTasksByLocDt(), Elapsed time in seconds:" ,
   		datetimediff (cnvtdatetime (curdate ,curtime3 ) ,begin_date_time ,5 ) ) ,log_level_debug )
+ 
+   if (loose_executed = 1)
+  	;set document_date_parser = "1=1"
+  	set encntr_location_parser = "1=1"
+  endif
+ 
+ 
+   call echo(build2("patient_parser=",patient_parser))
+   call echo(build2("document_date_parser=",document_date_parser))
+   call echo(build2("encntr_location_parser=",encntr_location_parser))
+ 
  
 	set record_data->timer_cnt = (record_data->timer_cnt + 1)
 	set stat = alterlist(record_data->timer_qual,record_data->timer_cnt)
 	set record_data->timer_qual[record_data->timer_cnt].start_time = cnvtdatetime(curdate,curtime3)
 	set record_data->timer_qual[record_data->timer_cnt].section = "Initial Data"
-
+ 
 	select into "nl:"
 	from
 		 clinical_event ce
@@ -681,7 +807,7 @@ CALL gathertasksbylocdt (0)
 										 ;003 ,value(uar_get_code_by("MEANING",8,"ALTERED"))
 										 ;003 ,value(uar_get_code_by("MEANING",8,"INERROR"))
 									)
-		
+ 
 		and   ce.valid_until_dt_tm >= cnvtdatetime(curdate, curtime3)
 		and   ce.event_tag        != "Date\Time Correction"
 ;		and   parser(document_date_parser)
@@ -714,7 +840,7 @@ CALL gathertasksbylocdt (0)
 		,ce.event_end_dt_tm ;003
 		,ce.event_id
 		,ce.clinical_event_id
-     head report 
+     head report
      	tcnt = size(record_data->tlist,5)
     	ignore_data = 0
     	order_string = ""
@@ -726,8 +852,8 @@ CALL gathertasksbylocdt (0)
      if (record_data->date_used = 1)
 		if ((record_data->start_check = "01-Jan-1900") and (record_data->end_check = "01-Jan-1900"))
 			ignore_data = 0
-		else 
-	     	if (cnvtdatetime(pe.event_end_dt_tm) 
+		else
+	     	if (cnvtdatetime(pe.event_end_dt_tm)
 	     		between cnvtdatetime(record_data->document_start_date) and cnvtdatetime(record_data->document_end_date))
 	     		ignore_data = 0
 	     	endif
@@ -742,8 +868,8 @@ CALL gathertasksbylocdt (0)
 		tcnt = (tcnt + 1 )
      	IF ((mod (tcnt ,100 ) = 1 ) ) stat = alterlist (record_data->tlist ,(tcnt + 99 ) ) ENDIF
      	record_data->tlist[tcnt ].can_chart_ind = 1
-     	
-    	record_data->tlist[tcnt ].dob = datetimezoneformat (p.birth_dt_tm ,p.birth_tz ,"dd-mmm-yyyy" ) 
+ 
+    	record_data->tlist[tcnt ].dob = datetimezoneformat (p.birth_dt_tm ,p.birth_tz ,"dd-mmm-yyyy" )
      	record_data->tlist[tcnt ].encounter_id = e.encntr_id
      	record_data->tlist[tcnt ].encntr_type = uar_Get_code_display(e.encntr_type_cd)
      	record_data->tlist[tcnt ].encntr_status = uar_Get_code_display(e.encntr_status_cd)
@@ -760,13 +886,13 @@ CALL gathertasksbylocdt (0)
 	 	record_data->tlist[tcnt ].gender = uar_get_code_display (p.sex_cd )
 	 	record_data->tlist[tcnt ].gender_char = cnvtupper (substring ( 1 ,1 ,record_data->tlist[tcnt ].gender ) )
 	 	age_str = cnvtlower (trim (substring (1 ,12 , cnvtage (p.birth_dt_tm ) ) ,4 ) )
-     	IF ((findstring ("days" ,age_str ,0 ) > 0 ) ) 
+     	IF ((findstring ("days" ,age_str ,0 ) > 0 ) )
 			days = findstring ("days" ,age_str ,0 )
 			record_data->tlist[tcnt ].age = substring (1 ,days ,age_str )
-     	ELSEIF ((findstring ("weeks" ,age_str ,0 ) > 0 ) ) 
+     	ELSEIF ((findstring ("weeks" ,age_str ,0 ) > 0 ) )
 			weeks = findstring ("weeks" ,age_str ,0 ) ,
 			record_data->tlist[tcnt ].age = substring (1 ,weeks ,age_str )
-     	ELSEIF ((findstring ("months" ,age_str ,0 ) > 0 ) ) 
+     	ELSEIF ((findstring ("months" ,age_str ,0 ) > 0 ) )
 			months = findstring ("months" ,age_str ,0 )
 			record_data->tlist[tcnt ].age = substring (1 ,months ,age_str )
      	ELSEIF ((findstring ("years" ,age_str ,0 ) > 0 ) )
@@ -791,13 +917,13 @@ CALL gathertasksbylocdt (0)
 		record_data->tlist[tcnt ].charted_dt = format (pe.event_end_dt_tm , "MM/DD/YYYY;4;D" )
 		record_data->tlist[tcnt ].charted_dt_utc = build (replace (datetimezoneformat (cnvtdatetime (pe.event_end_dt_tm ) ,
 				datetimezonebyname ("UTC" ) ,"yyyy-MM-dd HH:mm:ss" ,curtimezonedef ) ," " ,"T" ,1 ) ,"Z" )
-		
+ 
 		record_data->tlist[tcnt ].task_status = piece(record_data->tlist[tcnt ].task_display,":",1,"")
 		record_data->tlist[tcnt ].task_status = cnvtcap(record_data->tlist[tcnt ].task_status)
 		call echo(concat("record status =",record_data->tlist[tcnt ].task_status))
 		replace_string = concat(trim(cnvtupper(record_data->tlist[tcnt ].task_status)),":")
 		call echo(concat("record status for conversion =",trim(replace_string)))
-		
+ 
 		;if (record_data->tlist[tcnt ].task_status = record_data->tlist[tcnt ].task_display)
 		if (record_data->tlist[tcnt ].task_status not in("Actioned","Modified","Canceled"))
 			record_data->tlist[tcnt ].task_status = "Pending"
@@ -805,7 +931,7 @@ CALL gathertasksbylocdt (0)
 			call echo("replacing status")
 			record_data->tlist[tcnt ].task_display = replace(record_data->tlist[tcnt ].task_display,replace_string,"")
 		endif
-		
+ 
 		/* start 006 */
 		if (record_data->tlist[tcnt ].task_status in("Actioned"))
 			record_data->tlist[tcnt ].task_status = "Printed"
@@ -818,8 +944,8 @@ CALL gathertasksbylocdt (0)
 	    record_data->tlist[tcnt ].task_type = ""
 	    record_data->tlist[tcnt ].task_date = format (pe.event_end_dt_tm ,"MM/DD/YY;;q" )
 	    record_data->tlist[tcnt ].task_time = format (pe.event_end_dt_tm ,"hh:mm tt;;q" )
-	    record_data->tlist[tcnt ].task_dt_tm_num = datetimezone (pe.event_end_dt_tm ,pe.event_end_tz ) 
-	    ;record_data->tlist[tcnt ].task_dt_tm_utc = build (replace (datetimezoneformat (cnvtdatetime (ce.event_end_dt_tm ) 
+	    record_data->tlist[tcnt ].task_dt_tm_num = datetimezone (pe.event_end_dt_tm ,pe.event_end_tz )
+	    ;record_data->tlist[tcnt ].task_dt_tm_utc = build (replace (datetimezoneformat (cnvtdatetime (ce.event_end_dt_tm )
 	    ;											,datetimezonebyname ("UTC" ) , "yyyy-MM-dd HH:mm:ss" ,curtimezonedef ) ," " ,"T" ,1 ) ,"Z" )
  		;record_data->tlist[tcnt ].task_dt_tm_utc = format(pe.event_end_dt_tm,"dd-mmm-yyyy hh:mm;;q")
  		record_data->tlist[tcnt ].task_dt_tm_utc = concat(
@@ -868,12 +994,12 @@ CALL gathertasksbylocdt (0)
 			 record_data->timer_qual[record_data->timer_cnt].end_time
 			,record_data->timer_qual[record_data->timer_cnt].start_time
 			,6)
-
+ 
 	set record_data->timer_cnt = (record_data->timer_cnt + 1)
 	set stat = alterlist(record_data->timer_qual,record_data->timer_cnt)
 	set record_data->timer_qual[record_data->timer_cnt].start_time = cnvtdatetime(curdate,curtime3)
-	set record_data->timer_qual[record_data->timer_cnt].section = "Ordering Provider" 	
-	
+	set record_data->timer_qual[record_data->timer_cnt].section = "Ordering Provider"
+ 
 	/*
 	if (record_data->tlist[tcnt ].olist_cnt = 0)
 		go to exit_script
@@ -909,37 +1035,37 @@ CALL gathertasksbylocdt (0)
 	foot report
 		stat = 0
 	with nocounter,nullreport
-	
+ 
 	if (temp_provider->cnt > 0)
-		set _i = 1  
-		while(_i > 0)  
-		    if(record_data->tlist[_i].keep_ind != 2)  
-		        call echo(build("Removing index ", _i, " from record_data->tlist"))  
-		        set stat = alterlist(record_data->tlist, size(record_data->tlist, 5)-1, _i-1)  
-		        set _i = _i - 1  
-		    endif  
-		      
-		    if(_i = size(record_data->tlist, 5))  
-		        set _i = 0  
-		    else  
-		        set _i = _i + 1  
-		    endif  
-		endwhile  
+		set _i = 1
+		while(_i > 0)
+		    if(record_data->tlist[_i].keep_ind != 2)
+		        call echo(build("Removing index ", _i, " from record_data->tlist"))
+		        set stat = alterlist(record_data->tlist, size(record_data->tlist, 5)-1, _i-1)
+		        set _i = _i - 1
+		    endif
+ 
+		    if(_i = size(record_data->tlist, 5))
+		        set _i = 0
+		    else
+		        set _i = _i + 1
+		    endif
+		endwhile
 	endif
-	
+ 
 	set record_data->timer_qual[record_data->timer_cnt].end_time = cnvtdatetime(curdate,curtime3)
 	set record_data->timer_qual[record_data->timer_cnt].elapsed = datetimediff(
 		 record_data->timer_qual[record_data->timer_cnt].end_time
 		,record_data->timer_qual[record_data->timer_cnt].start_time
 		,6)
-	
-	
-
+ 
+ 
+ 
     set record_data->timer_cnt = (record_data->timer_cnt + 1)
 	set stat = alterlist(record_data->timer_qual,record_data->timer_cnt)
 	set record_data->timer_qual[record_data->timer_cnt].start_time = cnvtdatetime(curdate,curtime3)
 	set record_data->timer_qual[record_data->timer_cnt].section = "Requisition Type"
-    
+ 
     call echo("Starting query to find requisition type")
     select into "nl:"
 	 event_id = record_data->tlist[d1.seq].event_id
@@ -967,7 +1093,7 @@ CALL gathertasksbylocdt (0)
 				or 	(o.template_order_id = record_data->tlist[d1.seq].olist[d2.seq].order_id)
 				or 	(o.protocol_order_id = record_data->tlist[d1.seq].olist[d2.seq].order_id)
 			  )
-				
+ 
 		and   o.order_status_cd in(
 										 value(uar_get_code_by("MEANING",6004,"FUTURE"))
 										;002 ,value(uar_get_code_by("MEANING",6004,"ORDERED"))
@@ -1040,7 +1166,7 @@ CALL gathertasksbylocdt (0)
 	foot o.order_id
 		;record_data->tlist[d1.seq ].priority = od2.oe_field_display_value ;002
 		record_data->tlist[d1.seq ].future_location_unit_cd = o.future_location_nurse_unit_cd;009
-		record_data->tlist[d1.seq ].olist[d2.seq].priority = od2.oe_field_display_value 
+		record_data->tlist[d1.seq ].olist[d2.seq].priority = od2.oe_field_display_value
 	 	if (uar_get_code_meaning(oc.requisition_format_cd) in("OPREQWRAP"))
 	 		case (od2.oe_field_display_value)
 	 			;STAT>Urgent>Timed>AM Draw>Routine
@@ -1065,7 +1191,7 @@ CALL gathertasksbylocdt (0)
 		elseif (uar_get_code_meaning(oc.catalog_type_cd) in("GENERAL LAB"))
 			record_data->tlist[d1.seq ].sub_activity_type = "Outpatient Lab(s)"
 		endif
-		
+ 
 		if (record_data->tlist[d1.seq ].sub_activity_type = "")
 			record_data->tlist[d1.seq ].sub_activity_type = trim(uar_get_code_display(oc.activity_type_cd))
 		endif
@@ -1089,7 +1215,7 @@ CALL gathertasksbylocdt (0)
 	foot report
 		stat = 0
 	with nocounter,nullreport
-	
+ 
 	call echo("checking each order requested date and priority")
 	for (i=1 to size(record_data->tlist,5))
 		set k = 0
@@ -1101,11 +1227,11 @@ CALL gathertasksbylocdt (0)
 			if (k=1)
 				set record_data->tlist[i].visit_dt_tm_num = record_data->tlist[i].olist[j].requested_start_dt_tm
 			else
-				if (cnvtdatetime(record_data->tlist[i].olist[j].requested_start_dt_tm) 
+				if (cnvtdatetime(record_data->tlist[i].olist[j].requested_start_dt_tm)
 						< cnvtdatetime(record_data->tlist[i].visit_dt_tm_num))
 					set record_data->tlist[i].visit_dt_tm_num = record_data->tlist[i].olist[j].requested_start_dt_tm
 				endif
-				;011 if (cnvtdatetime(record_data->tlist[i].olist[j].requested_start_dt_tm) 
+				;011 if (cnvtdatetime(record_data->tlist[i].olist[j].requested_start_dt_tm)
 				;011			!= cnvtdatetime(record_data->tlist[i].visit_dt_tm_num))
 				if (format(cnvtdatetime(record_data->tlist[i].olist[j].requested_start_dt_tm),"mm-dd-yyyy;;d")  ;011
 					!= format(cnvtdatetime(record_data->tlist[i].visit_dt_tm_num),"mm-dd-yyyy;;d")) ;011
@@ -1139,24 +1265,24 @@ CALL gathertasksbylocdt (0)
 			endcase
 		endif
 	endfor
-		
+ 
 	if (requested_date_parser != "1=1")
-		set _i = 1  
-		while(_i > 0)  
-		    if(record_data->tlist[_i].keep_ind != 1)  
-		        call echo(build("Removing index ", _i, " from record_data->tlist"))  
-		        set stat = alterlist(record_data->tlist, size(record_data->tlist, 5)-1, _i-1)  
-		        set _i = _i - 1  
-		    endif  
-		      
-		    if(_i = size(record_data->tlist, 5))  
-		        set _i = 0  
-		    else  
-		        set _i = _i + 1  
-		    endif  
-		endwhile  
+		set _i = 1
+		while(_i > 0)
+		    if(record_data->tlist[_i].keep_ind != 1)
+		        call echo(build("Removing index ", _i, " from record_data->tlist"))
+		        set stat = alterlist(record_data->tlist, size(record_data->tlist, 5)-1, _i-1)
+		        set _i = _i - 1
+		    endif
+ 
+		    if(_i = size(record_data->tlist, 5))
+		        set _i = 0
+		    else
+		        set _i = _i + 1
+		    endif
+		endwhile
 	endif
-	
+ 
 	/*start 009 */
 	if (location_parser != "1=1")
 	call echo("checking location on encounter and order")
@@ -1182,19 +1308,19 @@ CALL gathertasksbylocdt (0)
 			endif
 		endif
 	endfor
-	set _i = 1  
-		while(_i > 0)  
-		    if(record_data->tlist[_i].keep_ind != 3)  
-		        call echo(build("Removing index ", _i, " from record_data->tlist"))  
-		        set stat = alterlist(record_data->tlist, size(record_data->tlist, 5)-1, _i-1)  
-		        set _i = _i - 1  
-		    endif  
-		      
-		    if(_i = size(record_data->tlist, 5))  
-		        set _i = 0  
-		    else  
-		        set _i = _i + 1  
-		    endif  
+	set _i = 1
+		while(_i > 0)
+		    if(record_data->tlist[_i].keep_ind != 3)
+		        call echo(build("Removing index ", _i, " from record_data->tlist"))
+		        set stat = alterlist(record_data->tlist, size(record_data->tlist, 5)-1, _i-1)
+		        set _i = _i - 1
+		    endif
+ 
+		    if(_i = size(record_data->tlist, 5))
+		        set _i = 0
+		    else
+		        set _i = _i + 1
+		    endif
 		endwhile
 	endif
 	/*select into "nl:"
@@ -1212,12 +1338,12 @@ CALL gathertasksbylocdt (0)
 		call echo("->location match")
 	foot report
 		null
-	with nocounter		
+	with nocounter
 	endif*/
 	/*end 009*/
-	
+ 
 	/*start 010*/
-	
+ 
 	record req_view
 	(
 		1 cnt = i2
@@ -1233,7 +1359,7 @@ CALL gathertasksbylocdt (0)
 		 2 location_cd = f8
 		 2 display = vc
 	) with protect
-	
+ 
 	select distinct
 		 cv1.display
 		,cv2.display
@@ -1275,7 +1401,7 @@ CALL gathertasksbylocdt (0)
 			 or (req_view->qual[cnt].start_exclude_dt_tm_vc = "")
 			)
 			req_view->qual[cnt].format_cd = 0.0
-			req_view->qual[cnt].format_display = ""	
+			req_view->qual[cnt].format_display = ""
 		else
 			req_view->qual[cnt].end_exclude_dt_tm = cnvtdatetime(req_view->qual[cnt].end_exclude_dt_tm_vc)
 			req_view->qual[cnt].start_exclude_dt_tm = cnvtdatetime(req_view->qual[cnt].start_exclude_dt_tm_vc)
@@ -1283,7 +1409,7 @@ CALL gathertasksbylocdt (0)
 	foot report
 		req_view->cnt = cnt
 	with nocounter
-	
+ 
 	select distinct
 		 cv3.display
 		,cv3.code_value
@@ -1317,9 +1443,9 @@ CALL gathertasksbylocdt (0)
 	foot report
 		req_view->loc_cnt = cnt
 	with nocounter
-		
+ 
 	call echorecord(req_view)
-
+ 
   if (size(record_data->tlist,5) > 0)
 	call echo("checking dates and times ")
 	select into "nl:"
@@ -1338,48 +1464,48 @@ CALL gathertasksbylocdt (0)
 				call echo(build("task_dt_tm_num=",format(record_data->tlist[d1.seq].task_dt_tm_num,";;q")))
 				call echo(build("start_exclude_dt_tm=",format(req_view->qual[pos].start_exclude_dt_tm,";;q")))
 				call echo(build("end_exclude_dt_tm=",format(req_view->qual[pos].end_exclude_dt_tm,";;q")))
-				if (	
+				if (
 						(cnvtdatetime(record_data->tlist[d1.seq].task_dt_tm_num) > cnvtdatetime(req_view->qual[pos].start_exclude_dt_tm))
 				    and (cnvtdatetime(record_data->tlist[d1.seq].task_dt_tm_num) < cnvtdatetime(req_view->qual[pos].end_exclude_dt_tm))
-				    
+ 
 				    )
 				    record_data->tlist[d1.seq].keep_ind = 0
-				   call echo("-->EXCLUDED") 
+				   call echo("-->EXCLUDED")
 				endif
 			endif
 		endif
-		
+ 
 		call echo("remove those that don't match ")
-		
-		set _i = 1  
-		while(_i > 0)  
-		    if(record_data->tlist[_i].keep_ind != 4)  
-		        call echo(build("Removing index ", _i, " from record_data->tlist"))  
-		        set stat = alterlist(record_data->tlist, size(record_data->tlist, 5)-1, _i-1)  
-		        set _i = _i - 1  
-		    endif  
-		      
-		    if(_i = size(record_data->tlist, 5))  
-		        set _i = 0  
-		    else  
-		        set _i = _i + 1  
-		    endif  
+ 
+		set _i = 1
+		while(_i > 0)
+		    if(record_data->tlist[_i].keep_ind != 4)
+		        call echo(build("Removing index ", _i, " from record_data->tlist"))
+		        set stat = alterlist(record_data->tlist, size(record_data->tlist, 5)-1, _i-1)
+		        set _i = _i - 1
+		    endif
+ 
+		    if(_i = size(record_data->tlist, 5))
+		        set _i = 0
+		    else
+		        set _i = _i + 1
+		    endif
 		endwhile
 	endif
 	/*end 010*/
-	
+ 
 	set record_data->timer_qual[record_data->timer_cnt].end_time = cnvtdatetime(curdate,curtime3)
 	set record_data->timer_qual[record_data->timer_cnt].elapsed = datetimediff(
 			 record_data->timer_qual[record_data->timer_cnt].end_time
 			,record_data->timer_qual[record_data->timer_cnt].start_time
 			,6)
-						
-	
-   
+ 
+ 
+ 
 	set record_data->timer_cnt = (record_data->timer_cnt + 1)
 	set stat = alterlist(record_data->timer_qual,record_data->timer_cnt)
 	set record_data->timer_qual[record_data->timer_cnt].start_time = cnvtdatetime(curdate,curtime3)
-	set record_data->timer_qual[record_data->timer_cnt].section = "Requisition Display"		
+	set record_data->timer_qual[record_data->timer_cnt].section = "Requisition Display"
 	for (i = 1 to size(record_data->tlist,5))
 		set k = 1
 		set order_string = ""
@@ -1387,7 +1513,7 @@ CALL gathertasksbylocdt (0)
 			set order_string = uar_get_code_meaning(record_data->tlist[i].requisition_format_cd)
 		endif
 		select into "nl:"
-		from code_value cv 
+		from code_value cv
 		plan cv
 			where cv.code_set = bc_common->code_set
 			and   cv.active_ind = 1
@@ -1406,15 +1532,15 @@ CALL gathertasksbylocdt (0)
 		 record_data->timer_qual[record_data->timer_cnt].end_time
 		,record_data->timer_qual[record_data->timer_cnt].start_time
 		,6)
-	
+ 
 	set record_data->timer_cnt = (record_data->timer_cnt + 1)
 	set stat = alterlist(record_data->timer_qual,record_data->timer_cnt)
 	set record_data->timer_qual[record_data->timer_cnt].start_time = cnvtdatetime(curdate,curtime3)
-	set record_data->timer_qual[record_data->timer_cnt].section = "Requisition History" 
-	
+	set record_data->timer_qual[record_data->timer_cnt].section = "Requisition History"
+ 
 	select into "nL:"
 	from
-		ce_event_prsnl cep 
+		ce_event_prsnl cep
 		,(dummyt d1 with seq=size(record_data->tlist,5))
 	plan d1
 		where record_data->tlist[d1.seq].event_id > 0.0
@@ -1431,16 +1557,16 @@ CALL gathertasksbylocdt (0)
 		record_data->tlist[d1.seq].latest_status = cep.action_comment
 		call echo(build(cep.event_id,":latest_status=",trim(record_data->tlist[d1.seq].latest_status)))
 	with nocounter
-
+ 
 	for (i = 1 to size(record_data->tlist,5))
 		if (record_data->tlist[i].latest_status = "")
 			set record_data->tlist[i].latest_status = "To Be Actioned"
 		endif
 	endfor
-	
+ 
 	select into "nL:"
 	from
-		ce_event_prsnl cep 
+		ce_event_prsnl cep
 		,(dummyt d1 with seq=size(record_data->tlist,5))
 	plan d1
 		where record_data->tlist[d1.seq].event_id > 0.0
@@ -1457,20 +1583,20 @@ CALL gathertasksbylocdt (0)
 		record_data->tlist[d1.seq].latest_comment = cep.action_comment
 		call echo(build(cep.event_id,":latest_comment=",trim(record_data->tlist[d1.seq].latest_comment)))
 	with nocounter
-	
-	
+ 
+ 
 	set record_data->timer_qual[record_data->timer_cnt].end_time = cnvtdatetime(curdate,curtime3)
 	set record_data->timer_qual[record_data->timer_cnt].elapsed = datetimediff(
 		 record_data->timer_qual[record_data->timer_cnt].end_time
 		,record_data->timer_qual[record_data->timer_cnt].start_time
 		,6)
-		
+ 
 	set record_data->timer_cnt = (record_data->timer_cnt + 1)
 	set stat = alterlist(record_data->timer_qual,record_data->timer_cnt)
 	set record_data->timer_qual[record_data->timer_cnt].start_time = cnvtdatetime(curdate,curtime3)
-	set record_data->timer_qual[record_data->timer_cnt].section = "Alias" 	
-
-	
+	set record_data->timer_qual[record_data->timer_cnt].section = "Alias"
+ 
+ 
 	select into "nl:"
 	from
 		 (dummyt d1 with seq=size(record_data->tlist,5))
@@ -1484,7 +1610,7 @@ CALL gathertasksbylocdt (0)
 		where e.encntr_id = record_data->tlist[d1.seq].encounter_id
 	join ea
 		where ea.encntr_id = e.encntr_id
-		and   ea.encntr_alias_type_cd in(	
+		and   ea.encntr_alias_type_cd in(
 											 value(uar_get_code_by("MEANING",319,"MRN"))
 											,value(uar_get_code_by("MEANING",319,"FIN NBR"))
 										)
@@ -1511,18 +1637,18 @@ CALL gathertasksbylocdt (0)
 	foot report
 		stat = 0
 	with nocounter,nullreport,outerjoin=d2
-	
-	
+ 
+ 
 	set record_data->timer_qual[record_data->timer_cnt].end_time = cnvtdatetime(curdate,curtime3)
 	set record_data->timer_qual[record_data->timer_cnt].elapsed = datetimediff(
 		 record_data->timer_qual[record_data->timer_cnt].end_time
 		,record_data->timer_qual[record_data->timer_cnt].start_time
 		,6)
  END ;Subroutine
-
-
-
-
+ 
+ 
+ 
+ 
 for (i=1 to record_data->timer_cnt)
 	if (i>1)
 		set record_data->timer_final = build(	 record_data->timer_final,"; ")
@@ -1531,19 +1657,19 @@ for (i=1 to record_data->timer_cnt)
 											,record_data->timer_qual[i].section
 											,":"
 											,trim(cnvtstring(record_data->timer_qual[i].elapsed)))
-	
+ 
 	call echo(build2("record_data->timer_qual[i].section=",record_data->timer_qual[i].section))
 	call echo(build2("record_data->timer_qual[i].elapsed=",record_data->timer_qual[i].elapsed))
 endfor
 if (tcnt > 0)
 	SET record_data->status_data.status = "S"
-else 
+else
 	SET record_data->status_data.status = "S"
 endif
 ;012 SET modify maxvarlen 20000000
 SET modify maxvarlen 200000000 ;012
 SET _memory_reply_string = cnvtrectojson (record_data )
-
+ 
 #exit_script
 	call echo("exit_script")
 #exit_program
