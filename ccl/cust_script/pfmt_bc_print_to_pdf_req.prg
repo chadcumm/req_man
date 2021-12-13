@@ -205,6 +205,7 @@ record t_rec
 	    2 template_order_flag		= i2	
 	    2 protocol_order_id			= f8	;037
 	    2 protocol_remain_cnt 		= i2	;053
+	    2 collect_dttm				= c11	;058
 	1 temp_cnt 					= i2
 	1 temp_list[*]
 		2 order_id				= f8
@@ -332,11 +333,11 @@ from person p
 plan p where p.person_id = bc_common->person_id
 detail
 	call writeLog(build2("--->",trim(p.name_full_formatted)))
-	;THIS WILL NOT PROCESS DEVELOPMENT PATIENTS, Turning off name validation for this script
+	;THIS WILL NOT PROCESS PLAY PATIENTS, Turning off name validation for this script
 	
 	
-	if ((p.name_last_key = "CSTPDF"))
-		bc_common->valid_ind = 1
+	if ((p.name_first_key = "DEVELOPMENT*") and (p.name_last_key = "CSTPDF"))
+		bc_common->valid_ind = 0
 	endif
 	
 with nocounter
@@ -895,6 +896,36 @@ endfor
 call writeLog(build2("* END running bc_all_all_std_routines ********************************"))
 call writeLog(build2("*************************************************************"))
 
+/*start 058 */
+call writeLog(build2("*************************************************************"))
+call writeLog(build2("* START Getting Start DT/TM *********************************"))
+
+declare RequestedStartDateTime = f8 with public, constant(uar_get_code_by("DISPLAYKEY", 16449, "REQUESTED START DATE/TIME"))
+declare check_collect_dttm = c11 
+          
+select into "nl:"
+from
+	 (dummyt d1 with seq=t_rec->temp_orderlist_cnt)
+	,orders o
+	,order_detail od
+plan d1
+join o
+	where o.order_id	= t_rec->temp_orderlist[d1.seq].order_id
+join od
+	where	 od.order_id = o.order_id
+	and 	od.oe_field_id = RequestedStartDateTime
+             and od.action_sequence = (select max(od1.action_sequence)
+                                         from order_detail   od1
+                                        where od1.order_id = od.order_id
+                                          and od1.oe_field_id = od.oe_field_id )
+detail
+	t_rec->temp_orderlist[d1.seq].collect_dttm = format(od.oe_field_dt_tm_value, "DD-MMMM-YYYY;;Q")
+with nocounter 
+	
+call writeLog(build2("* END   Getting Start DT/TM *********************************"))
+call writeLog(build2("*************************************************************"))
+/*end 058 */
+
 call writeLog(build2("*************************************************************"))
 call writeLog(build2("* START Adding Single Orders ********************************"))
 call writelog(build2("t_rec->temp_orderlist_cnt=",t_rec->temp_orderlist_cnt))
@@ -918,6 +949,7 @@ call writelog(build2("Starting Query 1"))
 select into "nl:"
 	action_type = t_rec->temp_orderlist[d1.seq].action_type_cd
 	,event_id = t_rec->temp_orderlist[d1.seq].event_id ;035
+	,collect_dttm = t_rec->temp_orderlist[d1.seq].collect_dttm ;058
 from
 	 (dummyt d1 with seq=t_rec->temp_orderlist_cnt)
 	,orders o
@@ -974,9 +1006,11 @@ order by
 	 action_type
 	,oc.requisition_format_cd
 	,event_id ;035
+	,collect_dttm ;058
 	,o.order_id
 head report
 	cnt = 0
+	check_collect_dttm = "<first>"; 058
 	;019 gcnt = 0
 	gcnt = t_rec->group_cnt ;019
 	call writeLog(build2("---->inside order selection query Adding Single Orders"))
@@ -1007,6 +1041,14 @@ head o.order_id
 		stat = alterlist(t_rec->grouplist,gcnt)
 		t_rec->group_cnt = gcnt
 	endif
+	
+	if ((check_collect_dttm != collect_dttm) and (t_rec->grouplist[gcnt].order_cnt > 0) and (check_collect_dttm != "<first>"))
+		call writeLog(build2("------>new collect_dttm splitting"))
+		gcnt = (gcnt + 1)
+		cnt = 0
+		stat = alterlist(t_rec->grouplist,gcnt)
+		t_rec->group_cnt = gcnt
+	endif
 	call writeLog(build2("---->after t_rec->grouplist[gcnt].order_cnt=",cnvtstring(t_rec->grouplist[gcnt].order_cnt)))
 	;016 end
 	cnt = (cnt + 1)
@@ -1021,6 +1063,7 @@ head o.order_id
 	t_rec->grouplist[gcnt].orderlist[cnt].action_cd 			= t_rec->temp_orderlist[d1.seq].action_type_cd
 	t_rec->grouplist[gcnt].orderlist[cnt].template_order_flag	= o.template_order_flag
 	t_rec->grouplist[gcnt].orderlist[cnt].protocol_order_id		= o.protocol_order_id
+	t_rec->grouplist[gcnt].orderlist[cnt].order_mnemonic		= o.order_mnemonic
 	/*for (j=1 to bc_common->requisition_cnt)
 		if (oc.requisition_format_cd = bc_common->requisition_qual[j].requisition_format_cd)
 			
@@ -1050,6 +1093,7 @@ foot o.order_id
 		endif
 	endfor
 	;025 cnt = 0
+	check_collect_dttm = collect_dttm ;058
 foot action_type
 	call writeLog(build2("<-----exiting action selection query"))
 foot report
@@ -1162,7 +1206,7 @@ else
 		t_rec->grouplist[gcnt].orderlist[cnt].conversation_id 		= 0.0
 		t_rec->grouplist[gcnt].orderlist[cnt].requisition_cd 		= oc.requisition_format_cd
 		t_rec->grouplist[gcnt].orderlist[cnt].action_cd 			= t_rec->temp_orderlist[d1.seq].action_type_cd
-	
+		t_rec->grouplist[gcnt].orderlist[cnt].order_mnemonic		= o.order_mnemonic
 		/*for (j=1 to bc_common->requisition_cnt)
 			if (oc.requisition_format_cd = bc_common->requisition_qual[j].requisition_format_cd)
 				
@@ -2067,7 +2111,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 		t_rec->temp_orderlist[d.seq].processed = 1
 		t_rec->grouplist[gcnt].orderlist[cnt].template_order_flag	= o2.template_order_flag ;034
 		t_rec->grouplist[gcnt].orderlist[cnt].protocol_order_id		= o2.protocol_order_id ;034
-		
+		t_rec->grouplist[gcnt].orderlist[cnt].order_mnemonic		= o2.order_mnemonic
 		call writeLog(build2("addded t_rec->grouplist[gcnt].orderlist[cnt].order_id="
 			,trim(cnvtstring(t_rec->grouplist[gcnt].orderlist[cnt].order_id))))
 	 endif ;023
@@ -2188,7 +2232,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 			t_rec->grouplist[gcnt].orderlist[cnt].conversation_id 		= 0.0
 			t_rec->grouplist[gcnt].orderlist[cnt].requisition_cd 		= oc.requisition_format_cd
 			t_rec->grouplist[gcnt].orderlist[cnt].action_cd 			= requestin->request->orderlist[d.seq].actiontypecd
-		
+			t_rec->grouplist[gcnt].orderlist[cnt].order_mnemonic		= o.order_mnemonic
 			/*for (j=1 to bc_common->requisition_cnt)
 				if (oc.requisition_format_cd = bc_common->requisition_qual[j].requisition_format_cd)
 					
@@ -2326,6 +2370,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 			t_rec->grouplist[gcnt].orderlist[cnt].printer_name 			= concat(t_rec->print_dir,"req_pdf_",trim(cnvtstring(o.order_id)),".pdf")
 			t_rec->grouplist[gcnt].orderlist[cnt].conversation_id 		= 0.0
 			t_rec->grouplist[gcnt].orderlist[cnt].requisition_cd 		= oc.requisition_format_cd
+			t_rec->grouplist[gcnt].orderlist[cnt].order_mnemonic		= o.order_mnemonic
 			t_rec->grouplist[gcnt].orderlist[cnt].action_cd 			= t_rec->temp_orderlist[d.seq].action_type_cd
 			t_rec->grouplist[gcnt].printer_name			= concat(t_rec->print_dir,"req_pdf_",trim(cnvtstring(o.order_id))
 															,trim(format(sysdate,"hhmmss;;d") ),".pdf")
@@ -2796,6 +2841,7 @@ if (t_rec->group_cnt > 0)
 		  		if (t_rec->grouplist[i].orderlist[k].protocol_order_cnt = 0)
 		  			call writeLog(build2("-->Protocol order count is 0"))
 		  			if (t_rec->temp_orderlist[j].protocol_order_id = t_rec->grouplist[i].orderlist[k].order_id)
+		  				
 		  				set t_rec->grouplist[i].last_cancel_ind = 1
 		  				call writeLog(build2("--->Protocol order_id matches the orderlist, setting last_cancel_ind"))
 		  			endif
@@ -2812,8 +2858,43 @@ if (t_rec->group_cnt > 0)
 		  		
 		  		call writeLog(build2("--->PROTOCOL EVENT_ID Matches, need to determine if this is the last cancel in protocol."))
 		  		if (t_rec->temp_orderlist[j].protocol_remain_cnt = 0)
-		  			call writeLog(build2("---->order is in a protocol with no remaining active orders and this was a cancel event."))
-		  			set t_rec->grouplist[i].last_cancel_ind = 1
+		  			
+		  			/*start 057 */
+		  				call writeLog(build2("-->protocol cancel action,checking if previously activated"))
+			  			select into "nl:"
+			  			from
+			  			 orders o
+			  			 ,order_action oa
+			  			plan o
+			  				where o.order_id = t_rec->temp_orderlist[j].order_id
+			  			join oa
+			  				where oa.order_id = o.order_id
+			  			order by
+			  				oa.action_sequence 
+			  			head report
+			  				last_action = o.last_action_sequence
+			  				prev_action = (last_action - 1)
+			  			detail
+			  				if (oa.action_sequence = prev_action)
+			  					call writeLog(build2("---->final action count=",last_action))
+			  					call writeLog(build2("---->checking previous action=",prev_action))
+			  					call writeLog(build2("---->previous order status=",uar_get_code_meaning(oa.order_status_cd)))
+			  					if (uar_get_code_meaning(oa.order_status_cd) = "FUTURE")
+			  						t_rec->grouplist[i].last_cancel_ind = 1
+			  						call writeLog(build2("---->t_rec->grouplist[i].last_cancel_ind=",t_rec->grouplist[i].last_cancel_ind))
+			  						call writeLog(build2("---->order is in a protocol with no remaining active orders and this was a cancel event."))	
+			  					else
+			  						t_rec->grouplist[i].silent_modify_ind = 1
+			  						call writeLog(build2("---->t_rec->grouplist[i].silent_modify_ind=",t_rec->grouplist[i].silent_modify_ind))
+			  						call writeLog(build2("---->order was previously not future, set silent indicator."))
+			  						
+			  					endif
+			  					
+			  				endif
+			  			with nocounter
+		  				/*end 057*/
+		  			;057 call writeLog(build2("---->order is in a protocol with no remaining active orders and this was a cancel event."))
+		  			;057 set t_rec->grouplist[i].last_cancel_ind = 1
 		  		endif
 		  	endif
 		  	
