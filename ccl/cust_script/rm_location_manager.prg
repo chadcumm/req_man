@@ -20,16 +20,20 @@
 
 Mod   Mod Date    Developer              Comment
 ---   ----------  --------------------  --------------------------------------
-000   01/20/2020  Chad Cummings			Initial Release ;ADD JIRA
+000   01/20/2020  Chad Cummings			Initial Release 
+001   12/14/2021  Chad Cummings         SUP-20211214
 ******************************************************************************/
 
 drop program rm_location_manager:dba go
 create program rm_location_manager:dba
 
 prompt 
-	"Output to File/Printer/MINE" = "MINE"   ;* Enter or select the printer or file name to send this report to. 
+	"Output to File/Printer/MINE" = "MINE"   ;* Enter or select the printer or file name to send this report to.
+	, "LOC_UNIT_CD" = 0
+	, "CODE_VALUE" = 0
+	, "SELECTED" = "" 
 
-with OUTDEV
+with OUTDEV, LOC_UNIT_CD, CODE_VALUE, SELECTED
 
 
 call echo(build("loading script:",curprog))
@@ -96,6 +100,7 @@ record t_rec
 	  3 unit_cd			= f8
 	  3 unit_name		= vc
 	  3 code_value		= f8
+	  3 ippdf_only		= i2
 )
 
 free record record_data
@@ -110,6 +115,7 @@ record record_data
 	  3 unit_cd			= f8
 	  3 unit_name		= vc
 	  3 code_value		= f8
+	  3 ippdf_only		= i2
   1 error_message = vc
   1 status_data
     2 status = c1
@@ -194,7 +200,7 @@ join cv2
 join d1
 join cv3
     where cv3.code_set = 103507
-    and   cv3.cdf_meaning = "LOCATION"
+    and   cv3.cdf_meaning in( "LOCATION","LOCATION_LTD")
     and   cv3.active_ind = 1
     and   cv3.display = cv2.display
 order by
@@ -232,6 +238,10 @@ head location
    	t_rec->loc_list[org_cnt ].unit_qual[unit_cnt].unit_name = replace (temp_string ,char (13 ) ," " )
    	t_rec->loc_list[org_cnt ].unit_qual[unit_cnt].unit_cd = l3.location_cd
    	t_rec->loc_list[org_cnt ].unit_qual[unit_cnt].code_value = cv3.code_value
+   	
+   	if (cv3.cdf_meaning = "LOCATION_LTD")
+   		t_rec->loc_list[org_cnt ].unit_qual[unit_cnt].ippdf_only = 1
+   	endif
 foot report
     stat = alterlist (t_rec->loc_list ,org_cnt )
 with nocounter, outerjoin = d1
@@ -245,6 +255,7 @@ for (i=1 to size(t_rec->loc_list,5))
 		set record_data->loc_list[i].unit_qual[j].unit_name		= t_rec->loc_list[i].unit_qual[j].unit_name
 		set record_data->loc_list[i].unit_qual[j].unit_cd		= t_rec->loc_list[i].unit_qual[j].unit_cd
 		set record_data->loc_list[i].unit_qual[j].code_value	= t_rec->loc_list[i].unit_qual[j].code_value
+		set record_data->loc_list[i].unit_qual[j].ippdf_only	= t_rec->loc_list[i].unit_qual[j].ippdf_only
 	endfor
 endfor
    
