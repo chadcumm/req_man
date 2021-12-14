@@ -61,8 +61,12 @@ var pwxstorefilterdata
 var requestAsync  = XMLHttpRequest(); 
 var cammStore  = XMLHttpRequest();
 var cammGet  = XMLHttpRequest();
-var camm_store_url = 'http://phsacdea.cerncd.com/camm/p0783.phsa_cd.cerncd.com/service/PDF_REQUISITION/store'
-var camm_get_url = 'http://phsacdea.cerncd.com/camm/p0783.phsa_cd.cerncd.com/service/mediaContent/'
+
+var sendArr = ["^MINE^"];
+		PWX_CCL_Request("bc_all_pdf_std_routines", sendArr, false, function () {
+			camm_get_url = this.URLS.CAMM_CONTENT;
+			camm_store_url = this.URLS.CAMM_STORE;
+		});
 
 function RenderPWxFrame() {
 	json_task_end_number = 0;
