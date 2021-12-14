@@ -155,7 +155,7 @@ head ce.encntr_id
 	record_data->parent_event_id = ce.parent_event_id
 with nocounter
 
-set resultdata->cmv_base = sCAMMMediaServicesBase('mediaContent')
+set record_data->cmv_base = sCAMMMediaServicesBase('mediaContent')
 
 ;set record_data->cmv_base = "http://phsacdeanp/camm-mpage/b0783.phsa_cd.cerncd.com/service/mediaContent/"
 set record_data->cmv_url = concat(trim(record_data->cmv_base),trim(record_data->identifier))
