@@ -23,6 +23,8 @@ record bc_all_pdf_std_variables
 (
     1 code_set
      2 printtopdf = f8
+    1 domain 
+     2 production_ind = i2
 ) with protect, persist
 
 declare sIsDevelopmentMode(pScript=vc) = i2 with copy, persist
@@ -30,9 +32,70 @@ declare sValidatePatient(pPersonId=f8) = i2 with copy, persist
 declare sPrinttoPDFCodeSet(null) = f8 with copy, persist
 declare sPopulateRecVariables(null) = null with copy, persist
 declare sPDFRoutineDebug(null) = i2 with copy, persist
+declare sProductionEnvironment(null) = i2 with copy, persist
 declare sPDFRoutineLog(pMessage=vc,pParam=vc(value,'message')) = null with copy, persist
+declare sCAMMMediaServicesBase(pParam=vc(value,'mediaContent')) = vc with copy, persist
 
 call sPopulateRecVariables(null)
+
+
+;==========================================================================================
+; Return TRUE or FALSE if the current domain is a production domain determined by the doamin
+; logical.
+;
+; USAGE: call sProductionEnvironment(null) 
+;==========================================================================================
+subroutine sProductionEnvironment(null)
+    call sPDFRoutineLog(build2('start sProductionEnvironment(',null,")"))
+    declare vProductionEnvironment = i2 with noconstant(FALSE), protect
+
+    if (substring(1,1,cnvtupper(curdomain)) = "P")
+        set vProductionEnvironment = TRUE
+    endif
+
+    return (vProductionEnvironment)
+    call sPDFRoutineLog(build2('end sProductionEnvironment(',null,")"))
+end ;sProductionEnvironment
+
+;==========================================================================================
+; Return URL for CAMM Media Services for specifc end points or base
+; pMessage = Message to log
+; pParam = if set to 'record' then the pMessage is a record structure to be echorecord
+; 
+; USAGE: call sPopulateRecVariables(pParam) 
+; OPTIONS: pParams: store, mediaContent
+;==========================================================================================
+subroutine sCAMMMediaServicesBase(pParam)
+    call sPDFRoutineLog(build2('start sCAMMMediaServicesBase(',pParam,")"))
+    
+    declare sCMVBaseURL = vc with noconstant(" "), protect
+    declare sCMVReturnURL = vc with noconstant(" "), protect
+
+    if (sProductionEnvironment(null) = TRUE)
+        set sCMVBaseURL = "http://phsacdea.cerncd.com/"
+    else
+        set sCMVBaseURL = "http://phsacdeanp.cerncd.com/"
+    endif
+
+    set sCMVBaseURL = concat(
+                                 trim(sCMVBaseURL)
+                                ,"camm/"
+                                ,trim(cnvtlower(curdomain))
+                                ,".phsa_cd.cerncd.com/service/"
+                            )
+
+    case (cnvtlower(pParam))
+        of "store":         set sCMVReturnURL = concat(sCMVBaseURL,"PDF_REQUISITION/store")
+        of "mediaContent":  set sCMVReturnURL = concat(sCMVBaseURL,"mediaContent/")    
+        else
+                            set sCMVReturnURL = sCMVBaseURL
+    endcase
+    call sPDFRoutineLog(build2('->sCMVBaseURL=',sCMVBaseURL))
+    call sPDFRoutineLog(build2('->sCMVReturnURL=',sCMVReturnURL))
+    return (sCMVReturnURL)
+    call sPDFRoutineLog(build2('end sCAMMMediaServicesBase(',pParam,")"))
+end ;sCAMMMediaServicesBase
+
 
 ;==========================================================================================
 ; Capture and report logging for debug and testing
@@ -85,7 +148,8 @@ end ;sPDFRoutineDebug
 subroutine sPopulateRecVariables(null)
     call sPDFRoutineLog(build2('start sPopulateRecVariables(',null,")"))
     set bc_all_pdf_std_variables->code_set.printtopdf = sPrinttoPDFCodeSet(null)
-
+    set bc_all_pdf_std_variables->domain.production_ind = sProductionEnvironment(null)
+    
     call sPDFRoutineLog('bc_all_pdf_std_variables','record')
     call sPDFRoutineLog(build2('end sPopulateRecVariables(',null,")"))
 end ;sPopulateRecVariables
@@ -164,9 +228,6 @@ subroutine sValidatePatient(pPersonId)
     declare vDevLastNameMath = i2 with noconstant(0), protect
     declare vDevFirstNameMath = i2 with noconstant(0), protect
 
-
-    ;used to determine if script is running in a production domain.  Non-production domains will check for development patients
-    declare sProductionEnvironment = i2 with noconstant(FALSE), protect
     ;record structure to hold the development patient name details
     free record temp_patient
     record temp_patient
@@ -181,12 +242,9 @@ subroutine sValidatePatient(pPersonId)
 
     declare d1seq = i4 with noconstant(0), protect
 
-    if (substring(1,1,cnvtupper(curdomain)) = "P")
-        set sProductionEnvironment = TRUE
-    endif
     call sPDFRoutineLog(build2('pPersonId=',pPersonId))
-    call sPDFRoutineLog(build2('sProductionEnvironment=',sProductionEnvironment))
-    if (sProductionEnvironment = FALSE)
+    call sPDFRoutineLog(build2('sProductionEnvironment(null)=',sProductionEnvironment(null)))
+    if (sProductionEnvironment(null) = FALSE)
         ;script is running in a non-production environment, get development patient definitions
         set stat = initrec(temp_patient)
         select into "nl:"
