@@ -68,6 +68,8 @@ end ;sProductionEnvironment
 subroutine sCAMMMediaServicesBase(pParam)
     call sPDFRoutineLog(build2('start sCAMMMediaServicesBase(',pParam,")"))
     
+    call sPDFRoutineLog(build2('->pParam=',pParam))
+
     declare sCMVBaseURL = vc with noconstant(" "), protect
     declare sCMVReturnURL = vc with noconstant(" "), protect
 
@@ -86,7 +88,7 @@ subroutine sCAMMMediaServicesBase(pParam)
 
     case (cnvtlower(pParam))
         of "store":         set sCMVReturnURL = concat(sCMVBaseURL,"PDF_REQUISITION/store")
-        of "mediaContent":  set sCMVReturnURL = concat(sCMVBaseURL,"mediaContent/")    
+        of "mediacontent":  set sCMVReturnURL = concat(sCMVBaseURL,"mediaContent/")    
         else
                             set sCMVReturnURL = sCMVBaseURL
     endcase
