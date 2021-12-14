@@ -75,9 +75,9 @@ subroutine sSchedulingOEFieldValue(null)
         scheduling_oefvalue->qual[scheduling_oefvalue->cnt].oe_field_value_cd       = cv.code_value
         scheduling_oefvalue->qual[scheduling_oefvalue->cnt].oe_field_value_display  = cv.display
     with nocounter
-	
+	call sPDFRoutineLog('scheduling_oefvalue','record')
     return (cnvtrectojson(scheduling_oefvalue))
-    call sPDFRoutineLog(build2('end sSchedulingOEFieldValue(',null,")"))
+    call sPDFRoutineLog(build2('end sSchedulingOEFieldValue(',null,')'))
 end ;sSchedulingOEFieldValue
 
 ;==========================================================================================
@@ -122,7 +122,7 @@ subroutine sSchedulingOEFieldID(null)
        scheduling_oefid->qual[scheduling_oefid->cnt].oe_field_id = o.oe_field_id
        scheduling_oefid->qual[scheduling_oefid->cnt].description = o.description
 	with nocounter
-	
+	call sPDFRoutineLog('scheduling_oefid','record')
     return (cnvtrectojson(scheduling_oefid))
     call sPDFRoutineLog(build2('end sSchedulingOEFieldID(',null,")"))
 end ;sSchedulingOEFieldID
