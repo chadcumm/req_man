@@ -160,8 +160,7 @@ subroutine sPopulateRecVariables(null)
     set bc_all_pdf_std_variables->urls.camm_store = sCAMMMediaServicesBase('store')
     set bc_all_pdf_std_variables->urls.camm_content = sCAMMMediaServicesBase('mediaContent')
     set bc_all_pdf_std_variables->status_data.status = "S"
-    set stat = copyrec(bc_all_pdf_std_variables,record_data,1)
-    set _memory_reply_string = cnvtrectojson(record_data)
+    
     call sPDFRoutineLog('bc_all_pdf_std_variables','record')
     call sPDFRoutineLog(build2('end sPopulateRecVariables(',null,")"))
 end ;sPopulateRecVariables
