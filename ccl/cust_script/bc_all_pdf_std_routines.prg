@@ -3,7 +3,6 @@ Source Code File: bc_all_pdf_std_routines.PRG
 Original Author:  Chad Cummings
 Date Written:     December 2021
  
-
 Comments: Include File which holds frequently used PDF Standard Sub-routines
  
  
@@ -25,6 +24,12 @@ record bc_all_pdf_std_variables
      2 printtopdf = f8
     1 domain 
      2 production_ind = i2
+    1 urls
+     2 camm_base = vc
+     2 camm_content = vc
+     2 camm_store = vc
+    1 status_data
+     2 status = c1
 ) with protect, persist
 
 declare sIsDevelopmentMode(pScript=vc) = i2 with copy, persist
@@ -35,9 +40,159 @@ declare sPDFRoutineDebug(null) = i2 with copy, persist
 declare sProductionEnvironment(null) = i2 with copy, persist
 declare sPDFRoutineLog(pMessage=vc,pParam=vc(value,'message')) = null with copy, persist
 declare sCAMMMediaServicesBase(pParam=vc(value,'mediaContent')) = vc with copy, persist
+declare sSchedulingOEFieldID(null) = vc with copy, persist
+declare sSchedulingOEFieldValue(null) = vc with copy, persist
+declare sIsSchedulingField(pOEFieldId=f8) = i2 with copy, persist
+declare sIsSchedulingValueCD(pOEFieldValueCD=f8) = i2 with copy, persist
 
 call sPopulateRecVariables(null)
 
+;==========================================================================================
+; Return a TRUE or FALSE if the provided OE_FIELD_VALUE_CD passes the Scheduling Location OEF
+; Value validation
+;
+; USAGE: call sIsSchedulingValueCD(OE_FIELD_VALUE_CD) 
+;==========================================================================================
+subroutine sIsSchedulingValueCD(pOEFieldValueCD)
+    call sPDFRoutineLog(build2('start sIsSchedulingValueCD(',pOEFieldValueCD,")"))
+    declare pOEFieldValueCDValid = i2 with noconstant(0), protect
+    declare i=i2 with noconstant(0), protect
+
+    set stat = cnvtjsontorec(sSchedulingOEFieldValue(null)) 
+    
+    for (i=1 to scheduling_oefvalue->cnt)
+        if (scheduling_oefvalue->qual[i].oe_field_value_cd = pOEFieldValueCD)
+            set pOEFieldValueCDValid = 1
+        endif
+    endfor
+    call sPDFRoutineLog(build2('->pOEFieldValueCDValid=',pOEFieldValueCDValid))
+    return (pOEFieldValueCDValid)
+    call sPDFRoutineLog(build2('end sIsSchedulingValueCD(',pOEFieldValueCD,")"))
+end ;sIsSchedulingValueCD
+
+;==========================================================================================
+; Return a JSON object named SCHEDULING_OEFVALUE that has a list of the Scheduling Order Entry Fields
+;
+; USAGE: call sSchedulingOEFieldValue(null) 
+;==========================================================================================
+subroutine sSchedulingOEFieldValue(null)
+    call sPDFRoutineLog(build2('start sSchedulingOEFieldValue(',null,")"))
+    declare i=i2 with noconstant(0), protect
+
+    record scheduling_oefvalue
+        (
+            1 cnt = i2
+            1 qual[*]
+             2 oe_field_value_cd = f8
+             2 oe_field_value_display = vc
+        ) with protect
+
+    select into "nl:"
+    from    
+        code_value cv
+    plan cv 
+        where  (
+                    ((cv.code_set = 100301 ) and (cv.display_key = "PRINTTOPAPER"))    
+                or  ((cv.code_set = 100173 ) and (cv.display_key = "PAPERREFERRAL"))
+                or  ((cv.code_set = 100173 ) and (cv.display_key = "PAPERREFERRALSEEREFERENCETEXT"))
+            )
+        and cv.active_ind = 1
+    order by   
+        cv.code_value
+    head cv.code_value
+        scheduling_oefvalue->cnt = (scheduling_oefvalue->cnt + 1)
+        stat = alterlist(scheduling_oefvalue->qual,scheduling_oefvalue->cnt)
+        scheduling_oefvalue->qual[scheduling_oefvalue->cnt].oe_field_value_cd       = cv.code_value
+        scheduling_oefvalue->qual[scheduling_oefvalue->cnt].oe_field_value_display  = cv.display
+    with nocounter
+    
+    /*
+    set scheduling_oefvalue->cnt = 3
+    set stat = alterlist(scheduling_oefvalue->qual,scheduling_oefvalue->cnt)
+
+    set scheduling_oefvalue->qual[1].oe_field_value_cd = uar_get_code_by("DISPLAY_KEY",100301,"PRINTTOPAPER")
+    set scheduling_oefvalue->qual[2].oe_field_value_cd = uar_get_code_by("DISPLAY_KEY",100173,"PAPERREFERRAL")
+    set scheduling_oefvalue->qual[3].oe_field_value_cd = uar_get_code_by("DISPLAY_KEY",100173,"PAPERREFERRALSEEREFERENCETEXT")
+
+    for (i=1 to scheduling_oefvalue->cnt)
+        set scheduling_oefvalue->qual[i].oe_field_value_display 
+            = uar_get_code_display(scheduling_oefvalue->qual[i].oe_field_value_cd)
+    endfor
+    */
+    
+	call sPDFRoutineLog('scheduling_oefvalue','record')
+    return (cnvtrectojson(scheduling_oefvalue))
+    call sPDFRoutineLog(build2('end sSchedulingOEFieldValue(',null,')'))
+end ;sSchedulingOEFieldValue
+
+;==========================================================================================
+; Return a TRUE or FALSE if the provided OE_FIELD_ID passes the Scheduling Location OEF
+; validation
+;
+; USAGE: call sIsSchedulingField(OE_FIELD_ID) 
+;==========================================================================================
+subroutine sIsSchedulingField(pOEFieldId)
+    call sPDFRoutineLog(build2('start sIsSchedulingField(',pOEFieldId,")"))
+    declare pOEFFieldValid = i2 with noconstant(0), protect
+    declare i=i2 with noconstant(0), protect
+
+    set stat = cnvtjsontorec(sSchedulingOEFieldID(null)) 
+    
+    for (i=1 to scheduling_oefid->cnt)
+        if (scheduling_oefid->qual[i].oe_field_id = pOEFieldId)
+            set pOEFFieldValid = 1
+        endif
+    endfor
+    call sPDFRoutineLog(build2('->pOEFFieldValid=',pOEFFieldValid))
+    return (pOEFFieldValid)
+    call sPDFRoutineLog(build2('end sIsSchedulingField(',pOEFieldId,")"))
+end ;sIsSchedulingField
+
+;==========================================================================================
+; Return a JSON object named SCHEDULING_OEFID that has a list of the Scheduling Order Entry Fields
+;
+; USAGE: call sSchedulingOEFieldID(null) 
+;==========================================================================================
+subroutine sSchedulingOEFieldID(null)
+    call sPDFRoutineLog(build2('start sSchedulingOEFieldID(',null,")"))
+
+    record scheduling_oefid
+        (
+            1 cnt = i2
+            1 qual[*]
+             2 oe_field_id = f8
+             2 description = vc
+        ) with protect
+
+    select into "nl:"
+	from 
+        order_entry_fields o
+	plan o
+	    where o.description = "Scheduling Location"
+	    and o.codeset = 100301
+    detail
+	   scheduling_oefid->cnt = (scheduling_oefid->cnt + 1)
+       stat = alterlist(scheduling_oefid->qual,scheduling_oefid->cnt)
+       scheduling_oefid->qual[scheduling_oefid->cnt].oe_field_id = o.oe_field_id
+       scheduling_oefid->qual[scheduling_oefid->cnt].description = o.description
+	with nocounter
+ 
+    select into "nl:"
+	from 
+        order_entry_fields o
+	plan o
+	    where o.description = "Scheduling Locations - Non Radiology"
+	    and o.codeset = 100173
+    detail
+	   scheduling_oefid->cnt = (scheduling_oefid->cnt + 1)
+       stat = alterlist(scheduling_oefid->qual,scheduling_oefid->cnt)
+       scheduling_oefid->qual[scheduling_oefid->cnt].oe_field_id = o.oe_field_id
+       scheduling_oefid->qual[scheduling_oefid->cnt].description = o.description
+	with nocounter
+	call sPDFRoutineLog('scheduling_oefid','record')
+    return (cnvtrectojson(scheduling_oefid))
+    call sPDFRoutineLog(build2('end sSchedulingOEFieldID(',null,")"))
+end ;sSchedulingOEFieldID
 
 ;==========================================================================================
 ; Return TRUE or FALSE if the current domain is a production domain determined by the doamin
@@ -151,6 +306,10 @@ subroutine sPopulateRecVariables(null)
     call sPDFRoutineLog(build2('start sPopulateRecVariables(',null,")"))
     set bc_all_pdf_std_variables->code_set.printtopdf = sPrinttoPDFCodeSet(null)
     set bc_all_pdf_std_variables->domain.production_ind = sProductionEnvironment(null)
+    set bc_all_pdf_std_variables->urls.camm_base = sCAMMMediaServicesBase()
+    set bc_all_pdf_std_variables->urls.camm_store = sCAMMMediaServicesBase('store')
+    set bc_all_pdf_std_variables->urls.camm_content = sCAMMMediaServicesBase('mediaContent')
+    set bc_all_pdf_std_variables->status_data.status = "S"
     
     call sPDFRoutineLog('bc_all_pdf_std_variables','record')
     call sPDFRoutineLog(build2('end sPopulateRecVariables(',null,")"))
@@ -231,7 +390,6 @@ subroutine sValidatePatient(pPersonId)
     declare vDevFirstNameMath = i2 with noconstant(0), protect
 
     ;record structure to hold the development patient name details
-    free record temp_patient
     record temp_patient
         (
             1 current_first_name = vc
