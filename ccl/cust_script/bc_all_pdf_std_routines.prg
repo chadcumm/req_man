@@ -35,9 +35,57 @@ declare sPDFRoutineDebug(null) = i2 with copy, persist
 declare sProductionEnvironment(null) = i2 with copy, persist
 declare sPDFRoutineLog(pMessage=vc,pParam=vc(value,'message')) = null with copy, persist
 declare sCAMMMediaServicesBase(pParam=vc(value,'mediaContent')) = vc with copy, persist
+declare sSchedulingOEFieldID(null) = vc with copy, persist
+declare sSchedulingOEFieldValue(null) = vc with copy, persist
 
 call sPopulateRecVariables(null)
 
+;==========================================================================================
+; Return a JSON object named SCHEDULING_OEFID that has a list of the Scheduling Order Entry Fields
+;
+; USAGE: call sSchedulingOEFieldID(null) 
+;==========================================================================================
+subroutine sSchedulingOEFieldID(null)
+    call sPDFRoutineLog(build2('start sSchedulingOEFieldID(',null,")"))
+    
+    free record scheduling_oefid
+    record scheduling_oefid
+        (
+            1 cnt = i2
+            1 qual[*]
+             2 oe_field_id = f8
+             2 description = vc
+        ) with protect
+
+    select into "nl:"
+	from 
+        order_entry_fields o
+	plan o
+	    where o.description = "Scheduling Location"
+	    and o.codeset = 100301
+    detail
+	   scheduling_oefid->cnt = (scheduling_oefid->cnt + 1)
+       stat = alterlist(scheduling_oefid->qual,scheduling_oefid->cnt)
+       scheduling_oefid->qual[scheduling_oefid->cnt].oe_field_id = o.oe_field_id
+       scheduling_oefid->qual[scheduling_oefid->cnt].description = o.description
+	with nocounter
+ 
+    select into "nl:"
+	from 
+        order_entry_fields o
+	plan o
+	    where o.description = "Scheduling Locations - Non Radiology"
+	    and o.codeset = 100173
+    detail
+	   scheduling_oefid->cnt = (scheduling_oefid->cnt + 1)
+       stat = alterlist(scheduling_oefid->qual,scheduling_oefid->cnt)
+       scheduling_oefid->qual[scheduling_oefid->cnt].oe_field_id = o.oe_field_id
+       scheduling_oefid->qual[scheduling_oefid->cnt].description = o.description
+	with nocounter
+	
+    return (cnvtrectojson(scheduling_oefid))
+    call sPDFRoutineLog(build2('end sSchedulingOEFieldID(',null,")"))
+end ;sProductionEnvironment
 
 ;==========================================================================================
 ; Return TRUE or FALSE if the current domain is a production domain determined by the doamin
