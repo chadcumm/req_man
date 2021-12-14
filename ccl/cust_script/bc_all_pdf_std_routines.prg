@@ -42,8 +42,33 @@ declare sPDFRoutineLog(pMessage=vc,pParam=vc(value,'message')) = null with copy,
 declare sCAMMMediaServicesBase(pParam=vc(value,'mediaContent')) = vc with copy, persist
 declare sSchedulingOEFieldID(null) = vc with copy, persist
 declare sSchedulingOEFieldValue(null) = vc with copy, persist
+declare sIsSchedulingField(pOEFieldId=f8) = i2 with copy, persist
+declare sIsSchedulingValueCD(pOEFieldValueCD=f8) = i2 with copy, persist
 
 call sPopulateRecVariables(null)
+
+;==========================================================================================
+; Return a TRUE or FALSE if the provided OE_FIELD_VALUE_CD passes the Scheduling Location OEF
+; Value validation
+;
+; USAGE: call sIsSchedulingValueCD(OE_FIELD_VALUE_CD) 
+;==========================================================================================
+subroutine sIsSchedulingValueCD(pOEFieldValueCD)
+    call sPDFRoutineLog(build2('start sIsSchedulingValueCD(',pOEFieldValueCD,")"))
+    declare pOEFieldValueCDValid = i2 with noconstant(0), protect
+    declare i=i2 with noconstant(0), protect
+
+    set stat = cnvtjsontorec(sSchedulingOEFieldValue(null)) 
+    
+    for (i=1 to scheduling_oefvalue->cnt)
+        if (scheduling_oefvalue->qual[i].oe_field_value_cd = pOEFieldValueCD)
+            set pOEFieldValueCDValid = 1
+        endif
+    endfor
+    call sPDFRoutineLog(build2('->pOEFieldValueCDValid=',pOEFieldValueCDValid))
+    return (pOEFieldValueCDValid)
+    call sPDFRoutineLog(build2('end sIsSchedulingValueCD(',pOEFieldValueCD,")"))
+end ;sIsSchedulingValueCD
 
 ;==========================================================================================
 ; Return a JSON object named SCHEDULING_OEFVALUE that has a list of the Scheduling Order Entry Fields
@@ -52,8 +77,8 @@ call sPopulateRecVariables(null)
 ;==========================================================================================
 subroutine sSchedulingOEFieldValue(null)
     call sPDFRoutineLog(build2('start sSchedulingOEFieldValue(',null,")"))
-    
-    free record scheduling_oefvalue
+    declare i=i2 with noconstant(0), protect
+
     record scheduling_oefvalue
         (
             1 cnt = i2
@@ -80,10 +105,48 @@ subroutine sSchedulingOEFieldValue(null)
         scheduling_oefvalue->qual[scheduling_oefvalue->cnt].oe_field_value_cd       = cv.code_value
         scheduling_oefvalue->qual[scheduling_oefvalue->cnt].oe_field_value_display  = cv.display
     with nocounter
+    
+    /*
+    set scheduling_oefvalue->cnt = 3
+    set stat = alterlist(scheduling_oefvalue->qual,scheduling_oefvalue->cnt)
+
+    set scheduling_oefvalue->qual[1].oe_field_value_cd = uar_get_code_by("DISPLAY_KEY",100301,"PRINTTOPAPER")
+    set scheduling_oefvalue->qual[2].oe_field_value_cd = uar_get_code_by("DISPLAY_KEY",100173,"PAPERREFERRAL")
+    set scheduling_oefvalue->qual[3].oe_field_value_cd = uar_get_code_by("DISPLAY_KEY",100173,"PAPERREFERRALSEEREFERENCETEXT")
+
+    for (i=1 to scheduling_oefvalue->cnt)
+        set scheduling_oefvalue->qual[i].oe_field_value_display 
+            = uar_get_code_display(scheduling_oefvalue->qual[i].oe_field_value_cd)
+    endfor
+    */
+    
 	call sPDFRoutineLog('scheduling_oefvalue','record')
     return (cnvtrectojson(scheduling_oefvalue))
     call sPDFRoutineLog(build2('end sSchedulingOEFieldValue(',null,')'))
 end ;sSchedulingOEFieldValue
+
+;==========================================================================================
+; Return a TRUE or FALSE if the provided OE_FIELD_ID passes the Scheduling Location OEF
+; validation
+;
+; USAGE: call sIsSchedulingField(OE_FIELD_ID) 
+;==========================================================================================
+subroutine sIsSchedulingField(pOEFieldId)
+    call sPDFRoutineLog(build2('start sIsSchedulingField(',pOEFieldId,")"))
+    declare pOEFFieldValid = i2 with noconstant(0), protect
+    declare i=i2 with noconstant(0), protect
+
+    set stat = cnvtjsontorec(sSchedulingOEFieldID(null)) 
+    
+    for (i=1 to scheduling_oefid->cnt)
+        if (scheduling_oefid->qual[i].oe_field_id = pOEFieldId)
+            set pOEFFieldValid = 1
+        endif
+    endfor
+    call sPDFRoutineLog(build2('->pOEFFieldValid=',pOEFFieldValid))
+    return (pOEFFieldValid)
+    call sPDFRoutineLog(build2('end sIsSchedulingField(',pOEFieldId,")"))
+end ;sIsSchedulingField
 
 ;==========================================================================================
 ; Return a JSON object named SCHEDULING_OEFID that has a list of the Scheduling Order Entry Fields
@@ -92,8 +155,7 @@ end ;sSchedulingOEFieldValue
 ;==========================================================================================
 subroutine sSchedulingOEFieldID(null)
     call sPDFRoutineLog(build2('start sSchedulingOEFieldID(',null,")"))
-    
-    free record scheduling_oefid
+
     record scheduling_oefid
         (
             1 cnt = i2
@@ -328,7 +390,6 @@ subroutine sValidatePatient(pPersonId)
     declare vDevFirstNameMath = i2 with noconstant(0), protect
 
     ;record structure to hold the development patient name details
-    free record temp_patient
     record temp_patient
         (
             1 current_first_name = vc
