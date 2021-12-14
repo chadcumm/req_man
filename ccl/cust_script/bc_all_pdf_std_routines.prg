@@ -41,6 +41,46 @@ declare sSchedulingOEFieldValue(null) = vc with copy, persist
 call sPopulateRecVariables(null)
 
 ;==========================================================================================
+; Return a JSON object named SCHEDULING_OEFVALUE that has a list of the Scheduling Order Entry Fields
+;
+; USAGE: call sSchedulingOEFieldValue(null) 
+;==========================================================================================
+subroutine sSchedulingOEFieldValue(null)
+    call sPDFRoutineLog(build2('start sSchedulingOEFieldValue(',null,")"))
+    
+    free record scheduling_oefvalue
+    record scheduling_oefvalue
+        (
+            1 cnt = i2
+            1 qual[*]
+             2 oe_field_value_cd = f8
+             2 oe_field_value_display = vc
+        ) with protect
+
+    select into "nl:"
+    from    
+        code_value cv
+    plan cv 
+        where  (
+                    ((cv.code_set = 100301 ) and (cv.display_key = "PRINTTOPAPER"))    
+                or  ((cv.code_set = 100173 ) and (cv.display_key = "PAPERREFERRAL"))
+                or  ((cv.code_set = 100173 ) and (cv.display_key = "PAPERREFERRALSEEREFERENCETEXT"))
+            )
+        and cv.active_ind = 1
+    order by   
+        cv.code_value
+    head cv.code_value
+        scheduling_oefvalue->cnt = (scheduling_oefvalue->cnt + 1)
+        stat = alterlist(scheduling_oefvalue->qual,scheduling_oefvalue->cnt)
+        scheduling_oefvalue->qual[scheduling_oefvalue->cnt].oe_field_value_cd       = cv.code_value
+        scheduling_oefvalue->qual[scheduling_oefvalue->cnt].oe_field_value_display  = cv.display
+    with nocounter
+	
+    return (cnvtrectojson(scheduling_oefvalue))
+    call sPDFRoutineLog(build2('end sSchedulingOEFieldValue(',null,")"))
+end ;sSchedulingOEFieldValue
+
+;==========================================================================================
 ; Return a JSON object named SCHEDULING_OEFID that has a list of the Scheduling Order Entry Fields
 ;
 ; USAGE: call sSchedulingOEFieldID(null) 
@@ -85,7 +125,7 @@ subroutine sSchedulingOEFieldID(null)
 	
     return (cnvtrectojson(scheduling_oefid))
     call sPDFRoutineLog(build2('end sSchedulingOEFieldID(',null,")"))
-end ;sProductionEnvironment
+end ;sSchedulingOEFieldID
 
 ;==========================================================================================
 ; Return TRUE or FALSE if the current domain is a production domain determined by the doamin
