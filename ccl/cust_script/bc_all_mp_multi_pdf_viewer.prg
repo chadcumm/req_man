@@ -71,7 +71,7 @@ record resultdata
 	 2 action_comment = vc
 )
 
-
+execute bc_all_pdf_std_routines
 
 select into "nl:"
 from
@@ -97,13 +97,7 @@ head ce.parent_event_id
 	call echo(resultdata->event_list[resultdata->event_cnt].clinical_event_id)
 with nocounter
 
-set resultdata->cmv_base = concat(
-										"http://phsacdea.cerncd.com/"
-										,"camm/"
-										,trim(cnvtlower(curdomain))				
-										;,trim(cnvtlower(b0783))
-										,".phsa_cd.cerncd.com/service/mediaContent/"
-								)
+set resultdata->cmv_base = sCAMMMediaServicesBase('mediaContent')
 								
 select into "nl:"
 from
