@@ -3,8 +3,6 @@ Source Code File: bc_all_pdf_std_routines.PRG
 Original Author:  Chad Cummings
 Date Written:     December 2021
  
- 
- 
 Comments: Include File which holds frequently used PDF Standard Sub-routines
  
  
