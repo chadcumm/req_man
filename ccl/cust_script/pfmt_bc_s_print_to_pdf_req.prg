@@ -90,6 +90,8 @@ endif
 %i cust_script:bc_play_routines.inc
 %i cust_script:bc_play_req.inc
 
+execute bc_all_pdf_std_routines
+
 declare i = i2 with noconstant(0)
 declare j = i2 with noconstant(0)
 declare k = i2 with noconstant(0)
@@ -273,6 +275,9 @@ call writeLog(build2("->bc_common->person_id =",trim(cnvtstring(bc_common->perso
 call writeLog(build2("**Global Process *********************************************"))
 call writeLog(build2("* START Add Orders to Temp (t_request) **********************"))
 
+set stat = cnvtjsontorec(sSchedulingOEFieldID(null)) 
+set stat = cnvtjsontorec(sSchedulingOEFieldValue(null)) 
+
 if (bc_common->requestin_ind = 1)
 	call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring(size(requestin->request->orderlist,5)))))
 	set t_request->trigger_app										= requestin->request->trigger_app	;005
@@ -285,8 +290,7 @@ if (bc_common->requestin_ind = 1)
 		set t_request->qual[t_request->cnt].requisitionformatcd		= requestin->request->orderlist[i].requisitionformatcd
 		set t_request->qual[t_request->cnt].actiontypecd			= requestin->request->orderlist[i].actiontypecd
 		for (j=1 to size(requestin->request->orderlist[i]->detaillist,5))
-			if (requestin->request->orderlist[i]->detaillist[j].oefieldid in(bc_common->scheduling_location_field_id,
-						bc_common->scheduling_location_field_non_radiology_id))
+			if (sIsSchedulingField(requestin->request->orderlist[i]->detaillist[j].oefieldid) = TRUE)
 				set t_request->qual[t_request->cnt].detaillist_cnt = (t_request->qual[t_request->cnt].detaillist_cnt + 1)
 				set stat = alterlist(t_request->qual[t_request->cnt].detaillist,t_request->qual[t_request->cnt].detaillist_cnt)
 				set t_request->qual[t_request->cnt].detaillist[t_request->qual[t_request->cnt].detaillist].oefieldid = 
@@ -308,8 +312,7 @@ else
 		set t_request->qual[t_request->cnt].requisitionformatcd		= requestin->orderlist[i].requisitionformatcd
 		set t_request->qual[t_request->cnt].actiontypecd			= requestin->orderlist[i].actiontypecd
 		for (j=1 to size(requestin->orderlist[i]->detaillist,5))
-			if (requestin->orderlist[i]->detaillist[j].oefieldid in(bc_common->scheduling_location_field_id,
-						bc_common->scheduling_location_field_non_radiology_id))
+			if (sIsSchedulingField(requestin->request->orderlist[i]->detaillist[j].oefieldid) = TRUE)
 				set t_request->qual[t_request->cnt].detaillist_cnt = (t_request->qual[t_request->cnt].detaillist_cnt + 1)
 				set stat = alterlist(t_request->qual[t_request->cnt].detaillist,t_request->qual[t_request->cnt].detaillist_cnt)
 				set t_request->qual[t_request->cnt].detaillist[t_request->qual[t_request->cnt].detaillist].oefieldid = 
@@ -329,25 +332,7 @@ call writeLog(build2("**********************************************************
 call writeLog(build2("**Global Process *********************************************"))
 call writeLog(build2("* START Validate Patient ************************************"))
 
-;Pass all Patients by Name
-set bc_common->valid_ind = 1
-
-
-select into "nl:"
-from person p
-plan p where p.person_id = bc_common->person_id
-detail
-	call writeLog(build2("--->",trim(p.name_full_formatted)))
-	;THIS WILL NOT PROCESS DEVELOPMENT PATIENTS, Turning off name validation for this script
-	
-	
-	if ((p.name_last_key = "CSTPDF"))
-		bc_common->valid_ind = 1
-	endif
-	
-with nocounter
-
-
+set bc_common->valid_ind = sValidatePatient(bc_common->person_id)
 
 call writeLog(build2("bc_common->location_cnt=",bc_common->location_cnt))
 call writeLog(build2("bc_common->valid_ind=",bc_common->valid_ind))
@@ -539,28 +524,44 @@ foot o.order_id
 		
 	endif
 	
-	if (uar_get_code_meaning(oc.requisition_format_cd) in("AMBREFERREQ","PROVECHOREQ","CRDASTATREQ","MIREQUISITN"))
-		for (j=1 to t_request->qual[d1.seq].detaillist_cnt)
-			if (t_request->qual[d1.seq].detaillist[j].oefieldid in(	bc_common->scheduling_location_field_id,
-																	bc_common->scheduling_location_field_non_radiology_id))
-				if (
-							(t_request->qual[d1.seq].detaillist[j].oefieldvalue 
-								not in(bc_common->print_to_paper_cd,bc_common->paper_referral_cd))
-					 	and (t_request->qual[d1.seq].detaillist[j].oefieldvalue > 0.0)
-					)
-						;006 temp_orders->qual[cnt].skip_ind = 1
-						temp_orders->qual[cnt].paper_requisition_ind = 0 ;006
-				else
-					temp_orders->qual[cnt].paper_requisition_ind = t_request->qual[d1.seq].detaillist[j].oefieldid ;001
-				endif
-			endif
-		endfor
-	endif
 	call writeLog(build2("<---leaving order_id=",trim(cnvtstring(o.order_id))))
 foot report
 	temp_orders->cnt = cnt
 	call writeLog(build2("<--leaving orders information (1)"))
 with nocounter,nullreport
+
+call writeLog(build2("->checking scheduling OEF"))
+call echorecord(temp_orders)
+for (i=1 to t_request->cnt)
+	call writeLog(build2("-->i=",i))
+	call writeLog(build2("-->uar_get_code_meaning(t_request->qual[i].requisitionformatcd)="
+		,uar_get_code_meaning(t_request->qual[i].requisitionformatcd)))
+		
+	if (sCheckforPaperRequisition(t_request->qual[i].requisitionformatcd) = TRUE)
+		call writeLog(build2("-->t_request->qual[i].orderid=",t_request->qual[i].orderid))
+		call writeLog(build2("-->temp_orders->cnt=",t_request->qual[i].orderid))
+		call writeLog(build2("-->temp_orders->qual[l].order_id=",temp_orders->qual[1].order_id))
+		set m = locateval(l,1,temp_orders->cnt,t_request->qual[i].orderid,temp_orders->qual[l].order_id)
+		call writeLog(build2("-->m=",m))
+		if (m > 0)
+			for (j=1 to t_request->qual[i].detaillist_cnt)
+				if (sIsSchedulingField(t_request->qual[i].detaillist[j].oefieldid) = TRUE)
+					call writeLog(build2("-->sIsSchedulingField=TRUE"))
+					call writeLog(build2("-->t_request->qual[i].detaillist[j].oefieldvalue=",t_request->qual[i].detaillist[j].oefieldvalue))
+					if (
+								(sIsSchedulingValueCD(t_request->qual[i].detaillist[j].oefieldvalue) = FALSE)
+						 	and (t_request->qual[i].detaillist[j].oefieldvalue > 0.0)
+						)
+							;006 temp_orders->qual[cnt].skip_ind = 1
+							set temp_orders->qual[m].paper_requisition_ind = 0 ;006
+					else
+						set temp_orders->qual[m].paper_requisition_ind = t_request->qual[i].detaillist[j].oefieldid ;001
+					endif
+				endif
+			endfor
+		endif
+	endif
+endfor
 
 call writeLog(build2("->determining if activiated protocol orders have future orders remaining (1n)"))
 select into "nl:"
@@ -1078,14 +1079,14 @@ call writeLog(build2("* START Check Paper to Department Change (single_wip) ****
 
 for (i=1 to single_wip->cnt)
 	if (
-			(uar_get_code_meaning(single_wip->qual[i].requisition_format_cd) in("AMBREFERREQ","PROVECHOREQ","CRDASTATREQ","MIREQUISITN"))
+			(sCheckforPaperRequisition(single_wip->qual[i].requisition_format_cd) = TRUE)
 			and (single_wip->qual[i].paper_requisition_ind = 0) 
 			and (single_wip->qual[i].event_id > 0.0)
 			and (single_wip->qual[i].action_type in("MODIFY"))
 		)
 		set single_wip->qual[i].action_type = "CANCEL"
 	elseif (
-				(uar_get_code_meaning(single_wip->qual[i].requisition_format_cd) in("AMBREFERREQ","PROVECHOREQ","CRDASTATREQ","MIREQUISITN"))
+				(sCheckforPaperRequisition(single_wip->qual[i].requisition_format_cd) = TRUE)
 			and (single_wip->qual[i].paper_requisition_ind = 0)
 			and	(single_wip->qual[i].missing_existing_doc = 0)	
 			and (single_wip->qual[i].action_type not in("CANCEL"))		

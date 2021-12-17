@@ -44,8 +44,141 @@ declare sSchedulingOEFieldID(null) = vc with copy, persist
 declare sSchedulingOEFieldValue(null) = vc with copy, persist
 declare sIsSchedulingField(pOEFieldId=f8) = i2 with copy, persist
 declare sIsSchedulingValueCD(pOEFieldValueCD=f8) = i2 with copy, persist
+declare sGetRequisitionDefinitions(null) = vc with copy, persist
+declare sCheckforPaperRequisition(pRequisitionFormatCD=f8) = i2 with copy, persist
+declare sGetLocationHierarchy(null) = vc with copy, persist
 
 call sPopulateRecVariables(null)
+
+
+;==========================================================================================
+; Return a JSON
+;
+; USAGE: call sGetLocationHierarchy(null) 
+;==========================================================================================
+subroutine sGetLocationHierarchy(null)
+    call sPDFRoutineLog(build2('start sGetLocationHierarchy(',null,")"))
+    declare i=i2 with noconstant(0), protect
+    declare temp_string = vc with noconstant(""), protect
+
+    record location_hierarchy
+    (
+        1 cnt = i2
+        1 qual[*]
+         2 location_cd = f8
+         2 facility_name = vc
+         2 facility_cd = f8
+         2 unit_cnt = i2
+         2 unit_qual[*]
+          3 unit_name = vc
+          3 unit_cd = f8
+          3 code_value = f8
+          3 type = vc
+          3 ippdf_only = i2
+    )
+
+    select distinct
+        location_cd = l3.location_cd ,
+        location = trim(uar_get_code_display(l3.location_cd)),
+        facility = trim(uar_get_code_description(l.location_cd))
+    from 
+        location l,
+        location_group lg,
+        location l2,
+        location_group lg2,
+        location l3,
+        code_value cv1,
+        code_value cv2,
+        code_value cv3,
+        dummyt d1
+    plan l
+        where l.location_type_cd = value(uar_get_code_by_cki("CKI.CODEVALUE!2844"))
+        and l.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3 ) 
+        and l.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3 ) 
+        and l.active_ind = 1 
+    join cv1
+        where cv1.code_value = l.location_cd
+    join lg
+        where lg.parent_loc_cd = l.location_cd
+        and lg.root_loc_cd = 0 
+        and lg.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3 )
+        and lg.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3 )
+        and lg.active_ind = 1 
+    join l2
+        where l2.location_cd = lg.child_loc_cd 
+        and l2.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3 ) 
+        and l2.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3 ) 
+        and l2.active_ind = 1 
+    join lg2
+        where lg.child_loc_cd = lg2.parent_loc_cd 
+        and lg2.root_loc_cd = 0 
+        and lg2.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3 ) 
+        and lg2.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3 ) 
+        and lg2.active_ind = 1 
+    join l3
+        where l3.location_cd = lg2.child_loc_cd 
+        and l3.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3 ) 
+        and l3.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3 ) 
+        and l3.active_ind = 1 
+        and l3.location_type_cd in(	
+                                    select
+                                    cv.code_value
+                                    from code_value cv 
+                                    where cv.cdf_meaning in("AMBULATORY","NURSEUNIT")
+                                )
+    join cv2
+        where cv2.code_value = l3.location_cd
+    join d1
+    join cv3
+        where cv3.code_set = 103507
+        and   cv3.cdf_meaning in("LOCATION","LOCATION_LTD") 
+        and   cv3.active_ind = 1
+        and   cv3.display = cv2.display
+    order by
+        facility,
+        location,
+        l.location_cd,
+        l3.location_cd
+    head report
+        org_cnt = 0 ,
+        unit_cnt = 0,
+        temp_string = ""
+    head facility
+        call sPDFRoutineLog(build2('-facility=',facility))
+        call sPDFRoutineLog(build2('-l.location_cd=',l.location_cd))
+
+        unit_cnt = 0,
+        temp_string = ""
+        org_cnt = (org_cnt + 1) ,
+    
+        if ((mod(org_cnt ,10) = 1))
+            stat = alterlist(location_hierarchy->qual ,(org_cnt + 9))
+        endif
+        temp_string = replace (facility ,char(10)," ")
+        location_hierarchy->qual[org_cnt].facility_name = replace (temp_string ,char (13 ) ," " )
+        location_hierarchy->qual[org_cnt].facility_cd = l.location_cd
+    head location
+        call sPDFRoutineLog(build2('--l3.location_cd=',l3.location_cd))
+        call sPDFRoutineLog(build2('--location=',location))
+        unit_cnt = (unit_cnt + 1)
+        stat = alterlist (location_hierarchy->qual[org_cnt].unit_qual,unit_cnt )
+        temp_string = replace (location ,char (10 ) ," " )
+        location_hierarchy->qual[org_cnt].unit_qual[unit_cnt].unit_name = replace (temp_string ,char (13 ) ," " )
+        location_hierarchy->qual[org_cnt].unit_qual[unit_cnt].unit_cd = l3.location_cd
+        location_hierarchy->qual[org_cnt].unit_qual[unit_cnt].code_value = cv3.code_value
+        location_hierarchy->qual[org_cnt].unit_qual[unit_cnt].type = cv3.cdf_meaning
+        location_hierarchy->qual[org_cnt].unit_cnt = unit_cnt
+    foot report
+        stat = alterlist (location_hierarchy->qual,org_cnt)
+        location_hierarchy->cnt = org_cnt
+    with nocounter, outerjoin = d1
+
+    call sPDFRoutineLog('location_hierarchy','record')
+
+    return (cnvtrectojson(location_hierarchy))
+    call sPDFRoutineLog(build2('end sGetLocationHierarchy(',null,")"))
+end ;sGetLocationHierarchy
+
 
 ;==========================================================================================
 ; Return a TRUE or FALSE if the provided OE_FIELD_VALUE_CD passes the Scheduling Location OEF
@@ -69,6 +202,93 @@ subroutine sIsSchedulingValueCD(pOEFieldValueCD)
     return (pOEFieldValueCDValid)
     call sPDFRoutineLog(build2('end sIsSchedulingValueCD(',pOEFieldValueCD,")"))
 end ;sIsSchedulingValueCD
+
+;==========================================================================================
+; Return a TRUE or FALSE if the requisition format is set to check for the paper referral 
+; OEF field.  Uses SCHED_LOC_CHECK code value extension in custom code set.
+;
+; USAGE: call sCheckforPaperRequisition(REQUISITION_FORMAT_CD)
+;==========================================================================================
+subroutine sGetRequisitionDefinitions(null)
+    call sPDFRoutineLog(build2('start sGetRequisitionDefinitions(',null,")"))
+    declare i=i2 with noconstant(0), protect
+    
+    record requisition_list
+        (
+            1 cnt = i2
+            1 qual[*]
+             2 code_value = f8
+             2 display = vc
+             2 description = vc
+             2 definition = vc
+             2 requisition_format_cd = f8
+             2 sched_loc_check = i2
+        ) with protect
+
+    select into "nl:"
+    from    
+         code_value cv1
+        ,code_value_extension cve1
+    plan cv1 
+        where   cv1.code_set = bc_all_pdf_std_variables->code_set.printtopdf
+        and     cv1.cdf_meaning = "REQUISITION"
+        and     cv1.active_ind = 1
+    join cve1   
+        where   cve1.code_value = outerjoin(cv1.code_value)
+        and     cve1.field_name = outerjoin("SCHED_LOC_CHECK")
+    order by   
+        cv1.code_value
+    head cv1.code_value
+        requisition_list->cnt = (requisition_list->cnt + 1)
+        stat = alterlist(requisition_list->qual,requisition_list->cnt)
+        requisition_list->qual[requisition_list->cnt].code_value       = cv1.code_value
+        requisition_list->qual[requisition_list->cnt].display          = cv1.display
+        requisition_list->qual[requisition_list->cnt].description      = cv1.description
+        requisition_list->qual[requisition_list->cnt].definition       = cv1.definition
+        requisition_list->qual[requisition_list->cnt].requisition_format_cd = 
+                uar_get_code_by("MEANING",6002,trim(cnvtupper(cv1.description)))
+    detail
+        case (cve1.field_name)
+            of "SCHED_LOC_CHECK": requisition_list->qual[requisition_list->cnt].sched_loc_check = cnvtint(cve1.field_value)
+        endcase
+    with nocounter
+	call sPDFRoutineLog('requisition_list','record')
+    
+    return (cnvtrectojson(requisition_list))
+    call sPDFRoutineLog(build2('end sGetRequisitionDefinitions(',null,')'))
+end ;sGetRequisitionDefinitions
+
+
+;==========================================================================================
+; Return a TRUE or FALSE if the requisition format is set to check for the paper referral 
+; OEF field.  Uses SCHED_LOC_CHECK code value extension in custom code set.
+;
+; USAGE: call sCheckforPaperRequisition(REQUISITION_FORMAT_CD)
+;==========================================================================================
+subroutine sCheckforPaperRequisition(pRequisitionFormatCD)
+    call sPDFRoutineLog(build2('start sCheckforPaperRequisition(',pRequisitionFormatCD,")"))
+    declare i=i2 with noconstant(0), protect
+    declare vPaperCheckInd = i2 with noconstant(0), protect
+
+    set stat = cnvtjsontorec(sGetRequisitionDefinitions(null)) 
+
+    call sPDFRoutineLog(build2('-requisition_list->cnt=',requisition_list->cnt))
+    for (i=1 to requisition_list->cnt)
+        call sPDFRoutineLog(build2('--checking description=',requisition_list->qual[i].description))
+        if (requisition_list->qual[i].requisition_format_cd = pRequisitionFormatCD)
+            call sPDFRoutineLog(build2('---matched pRequisitionFormatCD=',pRequisitionFormatCD))
+            call sPDFRoutineLog(build2('---check sched_loc_check=',requisition_list->qual[i].sched_loc_check))
+            if (requisition_list->qual[i].sched_loc_check = 1)
+                set vPaperCheckInd = 1
+            endif
+        endif
+    endfor
+
+    call sPDFRoutineLog(build2('-vPaperCheckInd=',vPaperCheckInd))
+    return (vPaperCheckInd)
+    call sPDFRoutineLog(build2('end sCheckforPaperRequisition(',pRequisitionFormatCD,')'))
+end ;sCheckforPaperRequisition
+
 
 ;==========================================================================================
 ; Return a JSON object named SCHEDULING_OEFVALUE that has a list of the Scheduling Order Entry Fields
