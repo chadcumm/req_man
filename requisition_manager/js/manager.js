@@ -62,9 +62,11 @@ var requestAsync  = XMLHttpRequest();
 var cammStore  = XMLHttpRequest();
 var cammGet  = XMLHttpRequest();
 var sendArr = ["^MINE^"];
-		PWX_CCL_Request("bc_all_pdf_std_routines", sendArr, false, function () {
+		
+PWX_CCL_Request("bc_all_pdf_std_routines_json", sendArr, false, function () {
 			camm_get_url = this.URLS.CAMM_CONTENT;
 			camm_store_url = this.URLS.CAMM_STORE;
+});
 
 function RenderPWxFrame() {
 	json_task_end_number = 0;
