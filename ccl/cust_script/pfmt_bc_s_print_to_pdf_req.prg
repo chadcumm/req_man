@@ -537,7 +537,7 @@ for (i=1 to t_request->cnt)
 	call writeLog(build2("-->uar_get_code_meaning(t_request->qual[i].requisitionformatcd)="
 		,uar_get_code_meaning(t_request->qual[i].requisitionformatcd)))
 		
-	if (uar_get_code_meaning(t_request->qual[i].requisitionformatcd) in("AMBREFERREQ","PROVECHOREQ","CRDASTATREQ","MIREQUISITN"))
+	if (sCheckforPaperRequisition(t_request->qual[i].requisitionformatcd) = TRUE)
 		call writeLog(build2("-->t_request->qual[i].orderid=",t_request->qual[i].orderid))
 		call writeLog(build2("-->temp_orders->cnt=",t_request->qual[i].orderid))
 		call writeLog(build2("-->temp_orders->qual[l].order_id=",temp_orders->qual[1].order_id))
@@ -1079,14 +1079,14 @@ call writeLog(build2("* START Check Paper to Department Change (single_wip) ****
 
 for (i=1 to single_wip->cnt)
 	if (
-			(uar_get_code_meaning(single_wip->qual[i].requisition_format_cd) in("AMBREFERREQ","PROVECHOREQ","CRDASTATREQ","MIREQUISITN"))
+			(sCheckforPaperRequisition(single_wip->qual[i].requisition_format_cd) = TRUE)
 			and (single_wip->qual[i].paper_requisition_ind = 0) 
 			and (single_wip->qual[i].event_id > 0.0)
 			and (single_wip->qual[i].action_type in("MODIFY"))
 		)
 		set single_wip->qual[i].action_type = "CANCEL"
 	elseif (
-				(uar_get_code_meaning(single_wip->qual[i].requisition_format_cd) in("AMBREFERREQ","PROVECHOREQ","CRDASTATREQ","MIREQUISITN"))
+				(sCheckforPaperRequisition(single_wip->qual[i].requisition_format_cd) = TRUE)
 			and (single_wip->qual[i].paper_requisition_ind = 0)
 			and	(single_wip->qual[i].missing_existing_doc = 0)	
 			and (single_wip->qual[i].action_type not in("CANCEL"))		

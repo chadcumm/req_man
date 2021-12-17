@@ -44,6 +44,8 @@ declare sSchedulingOEFieldID(null) = vc with copy, persist
 declare sSchedulingOEFieldValue(null) = vc with copy, persist
 declare sIsSchedulingField(pOEFieldId=f8) = i2 with copy, persist
 declare sIsSchedulingValueCD(pOEFieldValueCD=f8) = i2 with copy, persist
+declare sGetRequisitionDefinitions(null) = vc with copy, persist
+declare sCheckforPaperRequisition(pRequisitionFormatCD=f8) = i2 with copy, persist
 
 call sPopulateRecVariables(null)
 
@@ -69,6 +71,93 @@ subroutine sIsSchedulingValueCD(pOEFieldValueCD)
     return (pOEFieldValueCDValid)
     call sPDFRoutineLog(build2('end sIsSchedulingValueCD(',pOEFieldValueCD,")"))
 end ;sIsSchedulingValueCD
+
+;==========================================================================================
+; Return a TRUE or FALSE if the requisition format is set to check for the paper referral 
+; OEF field.  Uses SCHED_LOC_CHECK code value extension in custom code set.
+;
+; USAGE: call sCheckforPaperRequisition(REQUISITION_FORMAT_CD)
+;==========================================================================================
+subroutine sGetRequisitionDefinitions(null)
+    call sPDFRoutineLog(build2('start sGetRequisitionDefinitions(',null,")"))
+    declare i=i2 with noconstant(0), protect
+    
+    record requisition_list
+        (
+            1 cnt = i2
+            1 qual[*]
+             2 code_value = f8
+             2 display = vc
+             2 description = vc
+             2 definition = vc
+             2 requisition_format_cd = f8
+             2 sched_loc_check = i2
+        ) with protect
+
+    select into "nl:"
+    from    
+         code_value cv1
+        ,code_value_extension cve1
+    plan cv1 
+        where   cv1.code_set = bc_all_pdf_std_variables->code_set.printtopdf
+        and     cv1.cdf_meaning = "REQUISITION"
+        and     cv1.active_ind = 1
+    join cve1   
+        where   cve1.code_value = outerjoin(cv1.code_value)
+        and     cve1.field_name = outerjoin("SCHED_LOC_CHECK")
+    order by   
+        cv1.code_value
+    head cv1.code_value
+        requisition_list->cnt = (requisition_list->cnt + 1)
+        stat = alterlist(requisition_list->qual,requisition_list->cnt)
+        requisition_list->qual[requisition_list->cnt].code_value       = cv1.code_value
+        requisition_list->qual[requisition_list->cnt].display          = cv1.display
+        requisition_list->qual[requisition_list->cnt].description      = cv1.description
+        requisition_list->qual[requisition_list->cnt].definition       = cv1.definition
+        requisition_list->qual[requisition_list->cnt].requisition_format_cd = 
+                uar_get_code_by("MEANING",6002,trim(cnvtupper(cv1.description)))
+    detail
+        case (cve1.field_name)
+            of "SCHED_LOC_CHECK": requisition_list->qual[requisition_list->cnt].sched_loc_check = cnvtint(cve1.field_value)
+        endcase
+    with nocounter
+	call sPDFRoutineLog('requisition_list','record')
+    
+    return (cnvtrectojson(requisition_list))
+    call sPDFRoutineLog(build2('end sGetRequisitionDefinitions(',null,')'))
+end ;sGetRequisitionDefinitions
+
+
+;==========================================================================================
+; Return a TRUE or FALSE if the requisition format is set to check for the paper referral 
+; OEF field.  Uses SCHED_LOC_CHECK code value extension in custom code set.
+;
+; USAGE: call sCheckforPaperRequisition(REQUISITION_FORMAT_CD)
+;==========================================================================================
+subroutine sCheckforPaperRequisition(pRequisitionFormatCD)
+    call sPDFRoutineLog(build2('start sCheckforPaperRequisition(',pRequisitionFormatCD,")"))
+    declare i=i2 with noconstant(0), protect
+    declare vPaperCheckInd = i2 with noconstant(0), protect
+
+    set stat = cnvtjsontorec(sGetRequisitionDefinitions(null)) 
+
+    call sPDFRoutineLog(build2('-requisition_list->cnt=',requisition_list->cnt))
+    for (i=1 to requisition_list->cnt)
+        call sPDFRoutineLog(build2('--checking description=',requisition_list->qual[i].description))
+        if (requisition_list->qual[i].requisition_format_cd = pRequisitionFormatCD)
+            call sPDFRoutineLog(build2('---matched pRequisitionFormatCD=',pRequisitionFormatCD))
+            call sPDFRoutineLog(build2('---check sched_loc_check=',requisition_list->qual[i].sched_loc_check))
+            if (requisition_list->qual[i].sched_loc_check = 1)
+                set vPaperCheckInd = 1
+            endif
+        endif
+    endfor
+
+    call sPDFRoutineLog(build2('-vPaperCheckInd=',vPaperCheckInd))
+    return (vPaperCheckInd)
+    call sPDFRoutineLog(build2('end sCheckforPaperRequisition(',pRequisitionFormatCD,')'))
+end ;sCheckforPaperRequisition
+
 
 ;==========================================================================================
 ; Return a JSON object named SCHEDULING_OEFVALUE that has a list of the Scheduling Order Entry Fields
