@@ -261,129 +261,20 @@ if (t_rec->prompts.loc_unit_cd > 0.0)
     go to exit_success
 endif
 
-SELECT DISTINCT
-   location_cd = l3.location_cd ,
-   location = trim (uar_get_code_display (l3.location_cd ) ),
-   facility = trim (uar_get_code_description (l.location_cd ) )
-FROM 
-	prsnl_org_reltn por,
-    organization org,
-    location l,
-    location_group lg,
-    location l2,
-    location_group lg2,
-    location l3,
-    code_value cv1,
-    code_value cv2,
-    code_value cv3,
-    dummyt d1
-plan por
-	where por.person_id = 2
-    and por.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3)
-    and por.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3)
-    and por.active_ind = 1
-join org
-    where org.organization_id = por.organization_id 
-    and org.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3 ) 
-    and org.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3 ) 
-    and org.active_ind = 1
-join l
-   	where l.organization_id = org.organization_id 
-    and l.location_type_cd = value(uar_get_code_by_cki("CKI.CODEVALUE!2844"))
-    and l.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3 ) 
-    and l.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3 ) 
-    and l.active_ind = 1 
-join cv1
-    where cv1.code_value = l.location_cd
-join lg
-    where lg.parent_loc_cd = l.location_cd
-    and lg.root_loc_cd = 0 
-    and lg.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3 )
-    and lg.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3 )
-    and lg.active_ind = 1 
-join l2
-    where l2.location_cd = lg.child_loc_cd 
-    and l2.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3 ) 
-    and l2.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3 ) 
-    and l2.active_ind = 1 
-join lg2
-    where lg.child_loc_cd = lg2.parent_loc_cd 
-    and lg2.root_loc_cd = 0 
-    and lg2.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3 ) 
-    and lg2.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3 ) 
-    and lg2.active_ind = 1 
-join l3
-    where l3.location_cd = lg2.child_loc_cd 
-    and l3.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3 ) 
-    and l3.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3 ) 
-    and l3.active_ind = 1 
-    and l3.location_type_cd in(	
-    							 select
-							     cv.code_value
-							     from code_value cv 
-							     where cv.cdf_meaning in("AMBULATORY","NURSEUNIT")
-							   )
-join cv2
-    where cv2.code_value = l3.location_cd
-join d1
-join cv3
-    where cv3.code_set = 103507
-    and   cv3.cdf_meaning in( "LOCATION","LOCATION_LTD")
-    and   cv3.active_ind = 1
-    and   cv3.display = cv2.display
-order by
-   	facility ,
-   	location,
-   	l.location_cd,
-    l3.location_cd
-head report
-    org_cnt = 0 ,
-    unit_cnt = 0,
-    temp_string = ""
-   ;HEAD l3.location_cd
-   ;head l.location_cd
-head facility
-	call echo(build2("l.location_cd=",l.location_cd))
-	call echo(build2("facility=",facility))
- 
-    unit_cnt = 0,
-    temp_string = ""
-    org_cnt = (org_cnt + 1 ) ,
-   
-    IF ((mod (org_cnt ,10 ) = 1 ) )
-    	stat = alterlist (t_rec->loc_list ,(org_cnt + 9 ) )
-    ENDIF
-    temp_string = replace (facility ,char (10 ) ," " )
-    t_rec->loc_list[org_cnt].facility_name = replace (temp_string ,char (13 ) ," " )
-    t_rec->loc_list[org_cnt].facility_cd = l.location_cd
-   
-head location
-   	call echo(build2("l3.location_cd=",l3.location_cd))
-   	call echo(build2("location=",location))
-   	unit_cnt = (unit_cnt + 1)
-   	stat = alterlist (t_rec->loc_list[org_cnt].unit_qual,unit_cnt )
-   	temp_string = replace (location ,char (10 ) ," " )
-   	t_rec->loc_list[org_cnt ].unit_qual[unit_cnt].unit_name = replace (temp_string ,char (13 ) ," " )
-   	t_rec->loc_list[org_cnt ].unit_qual[unit_cnt].unit_cd = l3.location_cd
-   	t_rec->loc_list[org_cnt ].unit_qual[unit_cnt].code_value = cv3.code_value
-   	
-   	if (cv3.cdf_meaning = "LOCATION_LTD")
-   		t_rec->loc_list[org_cnt ].unit_qual[unit_cnt].ippdf_only = 1
-   	endif
-foot report
-    stat = alterlist (t_rec->loc_list ,org_cnt )
-with nocounter, outerjoin = d1
+set stat = cnvtjsontorec(sGetLocationHierarchy(null))
 
-for (i=1 to size(t_rec->loc_list,5))
+for (i=1 to location_hierarchy->cnt)
 	set stat = alterlist(record_data->loc_list,i)
-	set record_data->loc_list[i].facility_cd	= t_rec->loc_list[i].facility_cd
-	set record_data->loc_list[i].facility_name	= t_rec->loc_list[i].facility_name
-	for (j=1 to size(t_rec->loc_list[i].unit_qual,5))
+	set record_data->loc_list[i].facility_cd	= location_hierarchy->qual[i].facility_cd
+	set record_data->loc_list[i].facility_name	= location_hierarchy->qual[i].facility_name
+	for (j=1 to location_hierarchy->qual[i].unit_cnt)
 		set stat = alterlist(record_data->loc_list[i].unit_qual,j)
-		set record_data->loc_list[i].unit_qual[j].unit_name		= t_rec->loc_list[i].unit_qual[j].unit_name
-		set record_data->loc_list[i].unit_qual[j].unit_cd		= t_rec->loc_list[i].unit_qual[j].unit_cd
-		set record_data->loc_list[i].unit_qual[j].code_value	= t_rec->loc_list[i].unit_qual[j].code_value
-		set record_data->loc_list[i].unit_qual[j].ippdf_only	= t_rec->loc_list[i].unit_qual[j].ippdf_only
+		set record_data->loc_list[i].unit_qual[j].unit_name		= location_hierarchy->qual[i].unit_qual[j].unit_name
+		set record_data->loc_list[i].unit_qual[j].unit_cd		= location_hierarchy->qual[i].unit_qual[j].unit_cd
+		set record_data->loc_list[i].unit_qual[j].code_value	= location_hierarchy->qual[i].unit_qual[j].code_value
+		if (location_hierarchy->qual[i].unit_qual[j].type = "LOCATION_LTD")
+            set record_data->loc_list[i].unit_qual[j].ippdf_only	= 1
+        endif
 	endfor
 endfor
 
