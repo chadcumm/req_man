@@ -212,7 +212,8 @@ end ;sIsSchedulingValueCD
 subroutine sGetRequisitionDefinitions(null)
     call sPDFRoutineLog(build2('start sGetRequisitionDefinitions(',null,")"))
     declare i=i2 with noconstant(0), protect
-    
+    declare j=i2 with noconstant(0), protect
+
     record requisition_list
         (
             1 cnt = i2
@@ -223,6 +224,13 @@ subroutine sGetRequisitionDefinitions(null)
              2 definition = vc
              2 requisition_format_cd = f8
              2 sched_loc_check = i2
+             2 orders_per_req_ind = i2
+             2 rm_priority_group = i2
+             2 rm_priority_oem = vc
+             2 rm_type_display = vc
+             2 subtype_processing = vc
+             2 exclude_date_start = vc
+             2 exclude_date_end = vc
         ) with protect
 
     select into "nl:"
@@ -235,7 +243,6 @@ subroutine sGetRequisitionDefinitions(null)
         and     cv1.active_ind = 1
     join cve1   
         where   cve1.code_value = outerjoin(cv1.code_value)
-        and     cve1.field_name = outerjoin("SCHED_LOC_CHECK")
     order by   
         cv1.code_value
     head cv1.code_value
@@ -245,13 +252,42 @@ subroutine sGetRequisitionDefinitions(null)
         requisition_list->qual[requisition_list->cnt].display          = cv1.display
         requisition_list->qual[requisition_list->cnt].description      = cv1.description
         requisition_list->qual[requisition_list->cnt].definition       = cv1.definition
+        requisition_list->qual[requisition_list->cnt].orders_per_req_ind = cv1.collation_seq
         requisition_list->qual[requisition_list->cnt].requisition_format_cd = 
                 uar_get_code_by("MEANING",6002,trim(cnvtupper(cv1.description)))
     detail
         case (cve1.field_name)
+            of "SCHED_LOC_CHECK":   requisition_list->qual[requisition_list->cnt].sched_loc_check = cnvtint(cve1.field_value)
+            of "RM_PRIORITY_GROUP": requisition_list->qual[requisition_list->cnt].rm_priority_group = cnvtint(cve1.field_value)
+            of "RM_PRIORITY_OEM": requisition_list->qual[requisition_list->cnt].rm_priority_oem = cve1.field_value
+            of "RM_TYPE_DISPLAY": requisition_list->qual[requisition_list->cnt].rm_type_display = cve1.field_value
+            of "SUBTYPE_PROCESSING": requisition_list->qual[requisition_list->cnt].subtype_processing = cve1.field_value
+            of "EXCLUDE_DATE_START": requisition_list->qual[requisition_list->cnt].exclude_date_start = cve1.field_value
+            of "EXCLUDE_DATE_END": requisition_list->qual[requisition_list->cnt].exclude_date_end = cve1.field_value
+            of "SUBTYPE_PROCESSING": requisition_list->qual[requisition_list->cnt].subtype_processing = cve1.field_value
             of "SCHED_LOC_CHECK": requisition_list->qual[requisition_list->cnt].sched_loc_check = cnvtint(cve1.field_value)
         endcase
     with nocounter
+
+    select into "nl:"
+    from   
+        code_value cv1
+    plan cv1    
+        where cv1.code_set = 6002
+        and   cv1.active_ind = 1
+    order by   
+        cv1.code_value
+    head cv1.code_value
+        if (locateval(j,1,requisition_list->cnt,cv1.code_value,requisition_list->qual[j].requisition_format_cd)=0)
+            requisition_list->cnt = (requisition_list->cnt + 1)
+            stat = alterlist(requisition_list->qual,requisition_list->cnt)
+            requisition_list->qual[requisition_list->cnt].requisition_format_cd       = cv1.code_value
+            requisition_list->qual[requisition_list->cnt].display                     = cv1.display
+            requisition_list->qual[requisition_list->cnt].description                 = cv1.cdf_meaning
+            requisition_list->qual[requisition_list->cnt].definition                  = cv1.cdf_meaning
+        endif
+    with nocounter
+
 	call sPDFRoutineLog('requisition_list','record')
     
     return (cnvtrectojson(requisition_list))
@@ -274,12 +310,14 @@ subroutine sCheckforPaperRequisition(pRequisitionFormatCD)
 
     call sPDFRoutineLog(build2('-requisition_list->cnt=',requisition_list->cnt))
     for (i=1 to requisition_list->cnt)
-        call sPDFRoutineLog(build2('--checking description=',requisition_list->qual[i].description))
-        if (requisition_list->qual[i].requisition_format_cd = pRequisitionFormatCD)
-            call sPDFRoutineLog(build2('---matched pRequisitionFormatCD=',pRequisitionFormatCD))
-            call sPDFRoutineLog(build2('---check sched_loc_check=',requisition_list->qual[i].sched_loc_check))
-            if (requisition_list->qual[i].sched_loc_check = 1)
-                set vPaperCheckInd = 1
+        if (requisition_list->qual[i].code_value > 0.0)
+            call sPDFRoutineLog(build2('--checking description=',requisition_list->qual[i].description))
+            if (requisition_list->qual[i].requisition_format_cd = pRequisitionFormatCD)
+                call sPDFRoutineLog(build2('---matched pRequisitionFormatCD=',pRequisitionFormatCD))
+                call sPDFRoutineLog(build2('---check sched_loc_check=',requisition_list->qual[i].sched_loc_check))
+                if (requisition_list->qual[i].sched_loc_check = 1)
+                    set vPaperCheckInd = 1
+                endif
             endif
         endif
     endfor
