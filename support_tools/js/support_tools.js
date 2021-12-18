@@ -91,7 +91,14 @@ function mainLoad()		{
                 value: "oef_manage",
                 text : "OEF Options Manager"
             }));
-            
+        
+        //Requisition Definition Manager
+        $("#main_menu_select").append($('<option>',
+        {
+            value: "req_manage",
+            text : "Requisition Definition Manager"
+        }));
+
         //Announcment Manager
         $("#main_menu_select").append($('<option>',
             {
@@ -158,6 +165,8 @@ function mainLoad()		{
                                     break;
             case "location_manage":	LocationManage();
                                     break;
+            case "req_manage":	ReqDefinitionManage();
+                                    break;              
             default: 	
                                     break;
         } 
@@ -647,6 +656,172 @@ function LocationManage()	{
     };
 
     console.log("LocationManage ended");
+}
+
+function ReqDefinitionManage()	{
+    console.log("ReqDefinitionManage started");
+    
+    ReqDefHTML = [];
+    ReqDefHTML.push('<div id="reqdef_manage_content">');
+        ReqDefHTML.push('<table id="reqdef_manage_table">');
+            ReqDefHTML.push('<tr>');
+            ReqDefHTML.push('<td>');
+            ReqDefHTML.push('</td>');
+            ReqDefHTML.push('<td><div id="reqdef_req_loading" class="reqdef_req_loading"></div>');
+            ReqDefHTML.push('</td>');
+            ReqDefHTML.push('</tr>');
+        ReqDefHTML.push('</table>');
+        ReqDefHTML.push('<div id="reqdef_search">')
+            ReqDefHTML.push('<table>')
+                ReqDefHTML.push('<tr>')
+                ReqDefHTML.push('<td>')
+                ReqDefHTML.push('<input id="search-input" class="search-input" default="Filter List"/>')
+                ReqDefHTML.push('</td>')
+                ReqDefHTML.push('<td>')
+                ReqDefHTML.push('<div id="reqdef_search_loading" class="reqdef_search_loading"></div>');
+                ReqDefHTML.push('</td>')
+                ReqDefHTML.push('</tr>')
+            ReqDefHTML.push('</table>')
+            ReqDefHTML.push('</div>');
+        ReqDefHTML.push('<div id="division_reqdef_menu" class="division_reqdef_menu"></div>');
+        ReqDefHTML.push('<div id="reqdef_table"></div>');
+
+    ReqDefHTML.push('</div>');
+    
+    $("#tool_content").html(ReqDefHTML.join(''))
+    
+    $("#search-input").attr("placeholder", "Type here to filter");
+    $("#reqdef_search").hide();
+    $("#reqdef_req_loading").show()
+    $("#reqdef_search_loading").hide()
+    
+    
+    var ReqDefRequest = window.external.XMLCclRequest();						
+    ReqDefRequest.open("GET","rm_req_manager",true);
+    ReqDefRequest.send("~MINE~")
+    console.log("---- rm_req_manager params="+"~MINE~")
+    ReqDefRequest.onreadystatechange = function () {
+        if (ReqDefRequest.readyState == 4 && ReqDefRequest.status == 200) {
+            console.log("----- rm_req_manager finished")
+            var jsonReqDefResponse = JSON.parse(ReqDefRequest.responseText);
+            
+            var ReqDefResponse = jsonReqDefResponse.RECORD_DATA;
+            ReqDefRespHTML = [];
+            console.log("----- ReqDefResponse.req_list.length="+ReqDefResponse.REQ_LIST.length)
+            ReqDefRespHTML.push('<table id="filter_reqdef_table" class="filter_reqdef_table">')
+            ReqDefRespHTML.push('<th>Requsition Format Code</th>')
+            ReqDefRespHTML.push('<th>Requsition Format Name</th>')
+            ReqDefRespHTML.push('<th>Requsition Format Script</th>')
+            ReqDefRespHTML.push('<th>iPPDF Requisition Title</th>')
+            ReqDefRespHTML.push('<th>iPPDF Requisition Executable</th>')
+            ReqDefRespHTML.push('<th>Orders Per Req</th>')
+            ReqDefRespHTML.push('<th>Priority Group Order</th>')
+            ReqDefRespHTML.push('<th>Priority OEF</th>')
+            ReqDefRespHTML.push('<th>Priority Grouping</th>')
+            ReqDefRespHTML.push('<th>Scheduling Location</th>')
+            for (var i = 0; i < ReqDefResponse.REQ_LIST.length; i++) {
+                if (ReqDefResponse.REQ_LIST[i].CODE_VALUE > 0.0)    {
+                    var pdf_defined = 1
+                } else {
+                    var pdf_defined = 0
+                }
+                ReqDefRespHTML.push("<tr>")
+                ReqDefRespHTML.push("<div class=reqdef_req_entry>")
+                ReqDefRespHTML.push("<div class=reqdef_json_index>"+i+"</div>")
+                ReqDefRespHTML.push("<td>"+ReqDefResponse.REQ_LIST[i].REQUISITION_FORMAT_CD+"</td>")
+                ReqDefRespHTML.push("<td><div class='reqdef_item'>"+ReqDefResponse.REQ_LIST[i].REQUISITION_FORMAT_TITLE)
+                ReqDefRespHTML.push("<input type=hidden class=reqdef_requisition_format_cd value='"+ReqDefResponse.REQ_LIST[i].REQUISITION_FORMAT_CD+"'></input>")
+                ReqDefRespHTML.push("</div></td>")
+                
+                ReqDefRespHTML.push("<td>"+ReqDefResponse.REQ_LIST[i].DESCRIPTION+"</td>")
+                
+                ReqDefRespHTML.push("<td>")
+                if (pdf_defined == 1) {ReqDefRespHTML.push("<input value='"+ReqDefResponse.REQ_LIST[i].DISPLAY+"'></input>")}
+                ReqDefRespHTML.push("</td>")
+                
+                ReqDefRespHTML.push("<td>")
+                if (pdf_defined == 1) {ReqDefRespHTML.push("<input value='"+ReqDefResponse.REQ_LIST[i].DEFINITION+"'></input>")}
+                ReqDefRespHTML.push("</td>")
+
+                ReqDefRespHTML.push("<td>")
+                if (pdf_defined == 1) {
+
+                    if (ReqDefResponse.REQ_LIST[i].ORDERS_PER_REQ_IND == 1) {
+                        var single_checked = ' selected';
+                        var multiple_checked = '';
+                    } else { 
+                        var single_checked = '';
+                        var multiple_checked = ' selected';
+                    }
+
+                    ReqDefRespHTML.push("<select id='orders_per_req_ind'>")
+                    ReqDefRespHTML.push("<option value=1 "+single_checked+">Single</option>")
+                    ReqDefRespHTML.push("<option value=2 "+multiple_checked+">Multiple</option>")
+                    ReqDefRespHTML.push("</select>")
+                }
+                ReqDefRespHTML.push("</td>")
+
+                ReqDefRespHTML.push("<td>")
+                if (pdf_defined == 1) {ReqDefRespHTML.push("<input value='"+ReqDefResponse.REQ_LIST[i].RM_PRIORITY_GROUP+"'></input>")}
+                ReqDefRespHTML.push("</td>")
+
+                ReqDefRespHTML.push("<td>")
+                if (pdf_defined == 1) {ReqDefRespHTML.push("<input value='"+ReqDefResponse.REQ_LIST[i].RM_PRIORITY_OEM+"'></input>")}
+                ReqDefRespHTML.push("</td>")
+                
+                ReqDefRespHTML.push("<td>")
+                if (pdf_defined == 1) {ReqDefRespHTML.push("<input value='"+ReqDefResponse.REQ_LIST[i].RM_TYPE_DISPLAY+"'></input>")}
+                ReqDefRespHTML.push("</td>")
+
+                ReqDefRespHTML.push("<td>")
+                if (pdf_defined == 1) {
+                    if (ReqDefResponse.REQ_LIST[i].SCHED_LOC_CHECK == 1) {
+                        var sched_loc_checked = ' checked';
+                    } else { 
+                        var sched_loc_checked = '';
+                    }
+                    
+                    ReqDefRespHTML.push("<input type=checkbox id=sched_loc_check "+sched_loc_checked+"></input>")
+                   
+                }
+                ReqDefRespHTML.push("</td>")
+                
+                ReqDefRespHTML.push("<div class=reqdef_req_entry>")
+                ReqDefRespHTML.push("</tr>")
+            }
+            ReqDefRespHTML.push('</table>')
+            $("#reqdef_table").html(ReqDefRespHTML.join(''))
+            $("#reqdef_req_loading").hide()
+
+            $('.reqdef_item').click(function () {
+                var reqdef_requisition_format_cd = $(this).find('input.reqdef_requisition_format_cd').val()
+                var param_set = []
+                param_set.push("~MINE~")
+                param_set.push(reqdef_requisition_format_cd)
+                console.log("------- param_set="+param_set.join(','))
+                        
+                    var ReqDefUpdate = window.external.XMLCclRequest();						
+                    ReqDefUpdate.open("GET","rm_req_manager",false);
+                	ReqDefUpdate.send(param_set.join(','));
+                    if (ReqDefUpdate.readyState == 4 && ReqDefUpdate.status == 200) {
+                        console.log("-------- request processed")
+						var jsonReqDefUpdateResponse = JSON.parse(ReqDefUpdate.responseText);
+                		var ReqDefUpdateResponse = jsonReqDefUpdateResponse.RECORD_DATA;
+						console.log("-------- ReqDefUpdateResponse="+JSON.stringify(ReqDefUpdateResponse))
+                    } else {
+                    	console.log("-------- request failed readyState="+ReqDefUpdate.readyState+" ReqDefUpdate.status="+ReqDefUpdate.status)
+                    }
+                ReqDefinitionManage();
+            });
+        }
+    
+    }
+    
+    function ActivateReqDef()   {
+        alert(this)
+    }
+    
+    console.log("ReqDefinitionManage ended");
 }
 
 function FilterManage()	{

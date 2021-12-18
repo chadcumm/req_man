@@ -179,3 +179,22 @@ table.oef_manage_fields td, table.oef_manage_fields th {
 {
     display:none
 }
+
+table.filter_reqdef_table {
+  width: 75%;
+  text-align: left;
+  border-collapse: collapse;
+}
+table.filter_reqdef_table td, table.filter_reqdef_table th {
+  padding: 5px;
+  border: 1px solid black
+}
+
+.reqdef_json_index, .reqdef_requisition_format_cd {
+  display: none;
+}
+
+.reqdef_item  {
+  cursor: pointer;
+  text-decoration: underline;
+}

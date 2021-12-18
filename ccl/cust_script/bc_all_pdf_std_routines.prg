@@ -223,12 +223,14 @@ subroutine sGetRequisitionDefinitions(null)
              2 description = vc
              2 definition = vc
              2 requisition_format_cd = f8
+             2 requisition_format_title = vc
              2 sched_loc_check = i2
              2 orders_per_req_ind = i2
              2 rm_priority_group = i2
              2 rm_priority_oem = vc
              2 rm_type_display = vc
              2 subtype_processing = vc
+             2 oe_change_processing = i2
              2 exclude_date_start = vc
              2 exclude_date_end = vc
         ) with protect
@@ -255,6 +257,8 @@ subroutine sGetRequisitionDefinitions(null)
         requisition_list->qual[requisition_list->cnt].orders_per_req_ind = cv1.collation_seq
         requisition_list->qual[requisition_list->cnt].requisition_format_cd = 
                 uar_get_code_by("MEANING",6002,trim(cnvtupper(cv1.description)))
+        requisition_list->qual[requisition_list->cnt].requisition_format_title     = 
+                uar_get_code_display(requisition_list->qual[requisition_list->cnt].requisition_format_cd)
     detail
         case (cve1.field_name)
             of "SCHED_LOC_CHECK":   requisition_list->qual[requisition_list->cnt].sched_loc_check = cnvtint(cve1.field_value)
@@ -264,7 +268,8 @@ subroutine sGetRequisitionDefinitions(null)
             of "SUBTYPE_PROCESSING": requisition_list->qual[requisition_list->cnt].subtype_processing = cve1.field_value
             of "EXCLUDE_DATE_START": requisition_list->qual[requisition_list->cnt].exclude_date_start = cve1.field_value
             of "EXCLUDE_DATE_END": requisition_list->qual[requisition_list->cnt].exclude_date_end = cve1.field_value
-            of "SUBTYPE_PROCESSING": requisition_list->qual[requisition_list->cnt].subtype_processing = cve1.field_value
+            of "OE_CHANGE_PROCESSING": requisition_list->qual[requisition_list->cnt].oe_change_processing =
+                                         cnvtint(cve1.field_value)
             of "SCHED_LOC_CHECK": requisition_list->qual[requisition_list->cnt].sched_loc_check = cnvtint(cve1.field_value)
         endcase
     with nocounter
@@ -285,6 +290,7 @@ subroutine sGetRequisitionDefinitions(null)
             requisition_list->qual[requisition_list->cnt].display                     = cv1.display
             requisition_list->qual[requisition_list->cnt].description                 = cv1.cdf_meaning
             requisition_list->qual[requisition_list->cnt].definition                  = cv1.cdf_meaning
+            requisition_list->qual[requisition_list->cnt].requisition_format_title     = cv1.display
         endif
     with nocounter
 
