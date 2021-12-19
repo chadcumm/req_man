@@ -108,3 +108,7 @@ Requisition Manager and Integrated Print-to-PDF
 ### RM_REG_REQ_BY_PATHWAY
     Regenerate Requisitions by pathway ID
 ### RM_FILTER_PUSH     
+### BC_ALL_PDF_STD_ROUTINES
+    Standard set of routines that are shared across the scripts
+### BC_ALL_PDF_STD_ROUTINES_JSON
+    Returns the data from the routines in JSON format for MPages
