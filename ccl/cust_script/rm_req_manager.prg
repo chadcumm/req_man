@@ -1,48 +1,48 @@
 /*****************************************************************************
 ******************************************************************************
-
+ 
   Author:             Chad Cummings
   Date Written:       12/17/2021
-  Solution:           
+  Solution:
   Source file name:   rm_req_manager.prg
   Object name:        rm_req_manager
   Request #:
-
+ 
   Program purpose:
-
-  Executing from:     
-
-  Special Notes:       
-
+ 
+  Executing from:
+ 
+  Special Notes:
+ 
 ******************************************************************************
   GENERATED MODIFICATION CONTROL LOG
 ******************************************************************************
-
+ 
 Mod   Mod Date    Developer              Comment
 ---   ----------  --------------------  --------------------------------------
-000   12/17/2021  Chad Cummings			Initial Release 
+000   12/17/2021  Chad Cummings			Initial Release
 001   12/17/2021  Chad Cummings         CST-130820
 ******************************************************************************/
-
+ 
 drop program rm_req_manager:dba go
 create program rm_req_manager:dba
-
-prompt 
+ 
+prompt
 	"Output to File/Printer/MINE" = "MINE"
 	, "REQUISITION_FORMAT_CD" = 0
-	, "PARAMETERES" = "" 
-
+	, "PARAMETERES" = ""
+ 
 with OUTDEV, REQUISITION_FORMAT_CD, PARAMETERS
-
-
+ 
+ 
 call echo(build("loading script:",curprog))
-
+ 
 execute bc_all_pdf_std_routines
-
+ 
 declare nologvar = i2 with noconstant(1), protect	;do not create log = 1		, create log = 0
 declare debug_ind = i2 with noconstant(0), protect	;0 = no debug, 1=basic debug with echo, 2=msgview debug ;000
 declare rec_to_file = i2 with noconstant(0), protect
-
+ 
 select into "nl:"
 from
 	 code_value_set cvs
@@ -65,13 +65,13 @@ head cv.cdf_meaning
 		nologvar = 0
 	endif
 with nocounter
-
+ 
 set modify maxvarlen 268435456 ;increases max file size
-
+ 
 %i cust_script:bc_play_routines.inc
 %i cust_script:bc_play_req.inc
-
-
+ 
+ 
 call bc_custom_code_set(0)
 call bc_log_level(0)
 call bc_check_validation(0)
@@ -82,13 +82,13 @@ call bc_get_multiple_ord_requisitions(0)
 call bc_get_oef_changes(0) ;010
 call bc_get_included_locations(0)
 call bc_get_scheduling_fields(0)
-
+ 
 declare h = i2 with noconstant(0)
 declare i = i2 with noconstant(0)
 declare j = i2 with noconstant(0)
 declare k = i2 with noconstant(0)
-
-
+ 
+ 
 record t_rec
 (
 	1 prompts
@@ -96,6 +96,7 @@ record t_rec
         2 requisition_format_cd = f8
         2 parameters = vc
     1 cons
+        2 rm_code_value = f8
         2 requisition_format_cd = f8
         2 requisition_display = vc
         2 requisition_cdf_meaning = vc
@@ -106,8 +107,17 @@ record t_rec
         2 ippdf_display = vc
         2 ippdf_definition = vc
         2 ippdf_description = vc
+        2 ippdf_subtype_processing = vc
+        2 new_ippdf_title = vc
+        2 new_ippdf_req_script = vc
+        2 new_ippdf_orders_per_req = i2
+        2 new_ippdf_priority_group = vc
+        2 new_ippdf_priority_oem = vc
+        2 new_ippdf_type_display = vc
+        2 new_ippdf_sched_loc_check = vc
+        2 new_ippdf_subtype_processing = vc
 ) with protect
-
+ 
 free record record_data
 record record_data
 (
@@ -115,6 +125,11 @@ record record_data
         2 outdev			= vc
         2 requisition_format_cd = f8
         2 parameters = vc
+    1 params
+     	2 priority_group_order_max = i2
+     	2 priority_cnt = i2
+     	2 priority_qual[*]
+     		3 value = vc
     1 req_cnt = i2
     1 req_list[*]
         2 code_value = f8
@@ -141,20 +156,24 @@ record record_data
             3 targetobjectname = c25
             3 targetobjectvalue = vc
 ) with protect
-
+ 
 ;call echorecord(bc_common)
 declare temp_string = vc with noconstant("")
-
+ 
 set record_data->status_data[1].status = "F"
-
+ 
 set t_rec->prompts.outdev			= $OUTDEV
 set t_rec->prompts.requisition_format_cd = $REQUISITION_FORMAT_CD
 set t_rec->prompts.parameters	= $PARAMETERS
 
+if (t_rec->prompts.parameters > " ")
+	set t_rec->cons.ippdf_parameter_update = 1
+endif
+
 select into "nl:"
-from 
+from
     code_value cv
-plan cv 
+plan cv
     where cv.code_value = t_rec->prompts.requisition_format_cd
     and   cv.active_ind = 1
 detail
@@ -162,21 +181,21 @@ detail
     t_rec->cons.requisition_cdf_meaning = cv.cdf_meaning
     t_rec->cons.requisition_display = cv.display
 with nocounter
-
+ 
 if (t_rec->cons.requisition_format_cd > 0.0)
-
+ 
     select into "nl:"
-    from    
+    from
          code_value cv1
         ,code_value cv2
-    plan cv1    
+    plan cv1
         where cv1.code_value = t_rec->cons.requisition_format_cd
         and   cv1.active_ind = 1
-    join cv2    
+    join cv2
         where cv2.code_set = bc_all_pdf_std_variables->code_set.printtopdf
         and   cv2.cdf_meaning = "REQUISITION"
         and   cnvtupper(cv2.description) = cnvtupper(cv1.cdf_meaning)
-    detail  
+    detail
         t_rec->cons.ippdf_code_value = cv2.code_value
         t_rec->cons.ippdf_current_active_ind = cv2.active_ind
         t_rec->cons.ippdf_definition = cv2.definition
@@ -188,8 +207,9 @@ if (t_rec->cons.requisition_format_cd > 0.0)
         	t_rec->cons.ippdf_new_active_ind = 1
         endif
     with nocounter
-    
+ 
     if (t_rec->cons.ippdf_code_value > 0.0)
+    	
     	if (t_rec->cons.ippdf_parameter_update = 0)
     		 update into code_value
        		 set
@@ -197,10 +217,36 @@ if (t_rec->cons.requisition_format_cd > 0.0)
             	,updt_dt_tm = cnvtdatetime(curdate,curtime3)
             	,updt_id = reqinfo->updt_id
             	,updt_cnt = (updt_cnt + 1)
-        where code_value = t_rec->cons.ippdf_code_value and code_value > 0.0
-        commit
+        		where code_value = t_rec->cons.ippdf_code_value and code_value > 0.0
+       		commit
     	else
-    		set stat = 0
+    		set t_rec->cons.new_ippdf_title = piece(t_rec->prompts.parameters,~:~,1,~<not defined>~)
+    		set t_rec->cons.new_ippdf_req_script = piece(t_rec->prompts.parameters,~:~,2,t_rec->cons.requisition_cdf_meaning)
+    		set t_rec->cons.new_ippdf_orders_per_req = cnvtint(piece(t_rec->prompts.parameters,~:~,3,"1"))
+    		set t_rec->cons.new_ippdf_priority_group = piece(t_rec->prompts.parameters,~:~,4,"1")
+    		set t_rec->cons.new_ippdf_priority_oem = piece(t_rec->prompts.parameters,~:~,5,"Priority")
+    		set t_rec->cons.new_ippdf_type_display = piece(t_rec->prompts.parameters,~:~,6,"Lab, MI, Cardiology")
+    		set t_rec->cons.new_ippdf_sched_loc_check = piece(t_rec->prompts.parameters,~:~,7,"0")
+            set t_rec->cons.new_ippdf_subtype_processing = piece(t_rec->prompts.parameters,~:~,8,"activity_type_cd")
+    		
+    		if (t_rec->cons.new_ippdf_orders_per_req <= 0)
+    			set t_rec->cons.new_ippdf_orders_per_req = 1
+    		endif
+    		
+    		update into code_value
+       		 set
+             	 display = t_rec->cons.new_ippdf_title
+                ,display_key = cnvtupper(cnvtalphanum(t_rec->cons.new_ippdf_title))
+             	,definition = t_rec->cons.new_ippdf_req_script
+             	,collation_seq = t_rec->cons.new_ippdf_orders_per_req
+            	,updt_dt_tm = cnvtdatetime(curdate,curtime3)
+            	,updt_id = reqinfo->updt_id
+            	,updt_cnt = (updt_cnt + 1)
+        		where code_value = t_rec->cons.ippdf_code_value and code_value > 0.0
+       		commit
+    		
+    		
+    		
     	endif
     else
     	record 102901_request (
@@ -226,19 +272,78 @@ if (t_rec->cons.requisition_format_cd > 0.0)
         set 102901_request->code_value[102901_request->code_value_qual].display = "<DEFINE> Requisition"
         set 102901_request->code_value[102901_request->code_value_qual].description = t_rec->cons.requisition_cdf_meaning
         set 102901_request->code_value[102901_request->code_value_qual].definition =  t_rec->cons.requisition_cdf_meaning
+        set 102901_request->code_value[102901_request->code_value_qual].collation_seq_ind = 1
+        set 102901_request->code_value[102901_request->code_value_qual].collation_seq = 1
  
         call echorecord(102901_request)
         set stat = tdbexecute(100008,100083,102901,"REC",102901_request,"REC",102901_reply)
         call echorecord(102901_reply)
  
         if ((102901_reply->status_data->status = "S") and (102901_reply->code_value[1].code_value > 0.0))
-            set t_rec->constants.rm_code_value = 102901_reply->code_value[1].code_value
-            update into code_value set updt_id = reqinfo->updt_id where code_value = t_rec->constants.rm_code_value
-                                                                  and   code_value > 0.0
+            set t_rec->cons.rm_code_value = 102901_reply->code_value[1].code_value
+            update into code_value set updt_id = reqinfo->updt_id
+            where code_value = t_rec->cons.rm_code_value
+            and   code_value > 0.0
             commit
 		endif
+
+        record 4171666_request (
+		  1 extension_list [*]   
+		    2 action_type_flag = i2   
+		    2 code_set = i4   
+		    2 code_value = f8   
+		    2 field_name = vc  
+		    2 field_type = i4   
+		    2 field_value = vc  
+		)
+
+        /* To-Do
+        
+        "EXCLUDE_DATE_START": 
+        "EXCLUDE_DATE_END": 
+        "OE_CHANGE_PROCESSING"
+         */                   
+		set stat = alterlist(4171666_request->extension_list,5)
+		set 4171666_request->extension_list[1].action_type_flag = 1
+		set 4171666_request->extension_list[1].code_value = t_rec->cons.rm_code_value
+		set 4171666_request->extension_list[1].code_set = bc_all_pdf_std_variables->code_set.printtopdf
+		set 4171666_request->extension_list[1].field_name = "RM_PRIORITY_GROUP"
+		set 4171666_request->extension_list[1].field_value = "1"
+		set 4171666_request->extension_list[1].field_type = 1
+		
+		set 4171666_request->extension_list[2].action_type_flag = 1
+		set 4171666_request->extension_list[2].code_value = t_rec->cons.rm_code_value
+		set 4171666_request->extension_list[2].code_set = bc_all_pdf_std_variables->code_set.printtopdf
+		set 4171666_request->extension_list[2].field_name = "RM_PRIORITY_OEM"
+		set 4171666_request->extension_list[2].field_value = "Priority"
+		set 4171666_request->extension_list[2].field_type = 1
+		
+		set 4171666_request->extension_list[3].action_type_flag = 1
+		set 4171666_request->extension_list[3].code_value = t_rec->cons.rm_code_value
+		set 4171666_request->extension_list[3].code_set = bc_all_pdf_std_variables->code_set.printtopdf
+		set 4171666_request->extension_list[3].field_name = "RM_TYPE_DISPLAY"
+		set 4171666_request->extension_list[3].field_value = "Lab, MI, Cardiology"
+		set 4171666_request->extension_list[3].field_type = 1
+
+        set 4171666_request->extension_list[4].action_type_flag = 1
+		set 4171666_request->extension_list[4].code_value = t_rec->cons.rm_code_value
+		set 4171666_request->extension_list[4].code_set = bc_all_pdf_std_variables->code_set.printtopdf
+		set 4171666_request->extension_list[4].field_name = "SCHED_LOC_CHECK"
+		set 4171666_request->extension_list[4].field_value = "1"
+		set 4171666_request->extension_list[4].field_type = 1
+
+        set 4171666_request->extension_list[5].action_type_flag = 1
+		set 4171666_request->extension_list[5].code_value = t_rec->cons.rm_code_value
+		set 4171666_request->extension_list[5].code_set = bc_all_pdf_std_variables->code_set.printtopdf
+		set 4171666_request->extension_list[5].field_name = "SUBTYPE_PROCESSING"
+		set 4171666_request->extension_list[5].field_value = "activity_type_cd"
+		set 4171666_request->extension_list[5].field_type = 1
+		
+		call echorecord(4171666_request)
+		set stat = tdbexecute(4170105,4170151,4171666,"REC",4171666_request,"REC",4171666_reply)
+		call echorecord(4171666_reply)
     endif
-    
+ 
     call echorecord(t_rec)
 else
     set stat = cnvtjsontorec(sGetRequisitionDefinitions(null))
@@ -249,9 +354,9 @@ else
         set record_data->req_list[record_data->req_cnt].display = requisition_list->qual[i].display
         set record_data->req_list[record_data->req_cnt].description = requisition_list->qual[i].description
         set record_data->req_list[record_data->req_cnt].definition = requisition_list->qual[i].definition
-        set record_data->req_list[record_data->req_cnt].requisition_format_cd 
+        set record_data->req_list[record_data->req_cnt].requisition_format_cd
             = requisition_list->qual[i].requisition_format_cd
-        set record_data->req_list[record_data->req_cnt].requisition_format_title 
+        set record_data->req_list[record_data->req_cnt].requisition_format_title
             = requisition_list->qual[i].requisition_format_title
         set record_data->req_list[record_data->req_cnt].sched_loc_check = requisition_list->qual[i].sched_loc_check
         set record_data->req_list[record_data->req_cnt].orders_per_req_ind = requisition_list->qual[i].orders_per_req_ind
@@ -261,20 +366,59 @@ else
         set record_data->req_list[record_data->req_cnt].subtype_processing = requisition_list->qual[i].subtype_processing
         set record_data->req_list[record_data->req_cnt].exclude_date_start = requisition_list->qual[i].exclude_date_start
         set record_data->req_list[record_data->req_cnt].exclude_date_end = requisition_list->qual[i].exclude_date_end
-        set record_data->req_list[record_data->req_cnt].oe_change_processing = requisition_list->qual[i].oe_change_processing       
+        set record_data->req_list[record_data->req_cnt].oe_change_processing = requisition_list->qual[i].oe_change_processing
+ 
+        if (requisition_list->qual[i].rm_priority_group > record_data->params.priority_group_order_max)
+        	set record_data->params.priority_group_order_max = requisition_list->qual[i].rm_priority_group
+        endif
+ 
+ 
+        select distinct
+			off.label_text
+		from
+			 code_value cv2
+			,order_catalog oc
+			,oe_format_fields off
+			,order_entry_fields oef
+			,oe_field_meaning ofm
+		plan cv2
+			where cv2.code_set = 6002
+			and   cv2.code_value = record_data->req_list[record_data->req_cnt].requisition_format_cd
+			and   cv2.active_ind = 1
+		join oc
+			where oc.requisition_format_cd = cv2.code_value
+			and   oc.active_ind = 1
+		join off
+			where off.oe_format_id = oc.oe_format_id
+		join oef
+			where oef.oe_field_id = off.oe_field_id
+		join ofm
+			where ofm.oe_field_meaning_id = oef.oe_field_meaning_id
+			and	  ofm.oe_field_meaning in( "PRIORITY","COLLPRI")
+		order by
+			off.label_text
+		head off.label_text
+			if (locateval(j,1,record_data->params.priority_cnt,
+					trim(off.label_text),record_data->params.priority_qual[j].value) = 0)
+				record_data->params.priority_cnt = (record_data->params.priority_cnt + 1)
+				stat = alterlist(record_data->params.priority_qual,record_data->params.priority_cnt)
+				record_data->params.priority_qual[record_data->params.priority_cnt].value = trim(off.label_text)
+			endif
+		with nocounter
     endfor
 endif
-
+ 
 #exit_success
-
+ 
 set record_data->status_data[1].status = "S"
-
+ 
 #exit_script
-
-
+ 
+ 
 set _memory_reply_string = cnvtrectojson (record_data)
 ;call echo(_memory_reply_string)
 call echorecord(record_data)
 ;call echorecord(t_rec)
 end
 go
+ 

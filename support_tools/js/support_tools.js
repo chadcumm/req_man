@@ -719,16 +719,19 @@ function ReqDefinitionManage()	{
             ReqDefRespHTML.push('<th>Priority OEF</th>')
             ReqDefRespHTML.push('<th>Priority Grouping</th>')
             ReqDefRespHTML.push('<th>Scheduling Location</th>')
+            ReqDefRespHTML.push('<th>Subtype Category</th>')
+            ReqDefRespHTML.push('<th>Update</th>')
             for (var i = 0; i < ReqDefResponse.REQ_LIST.length; i++) {
                 if (ReqDefResponse.REQ_LIST[i].CODE_VALUE > 0.0)    {
                     var pdf_defined = 1
                 } else {
                     var pdf_defined = 0
                 }
-                ReqDefRespHTML.push("<tr>")
-                ReqDefRespHTML.push("<div class=reqdef_req_entry>")
+                ReqDefRespHTML.push("<tr class=reqdef_req_entry>")
                 ReqDefRespHTML.push("<div class=reqdef_json_index>"+i+"</div>")
-                ReqDefRespHTML.push("<td>"+ReqDefResponse.REQ_LIST[i].REQUISITION_FORMAT_CD+"</td>")
+                ReqDefRespHTML.push("<td>");
+                ReqDefRespHTML.push("<div id=reqdef_req_format_cd>"+ReqDefResponse.REQ_LIST[i].REQUISITION_FORMAT_CD+"</div>");
+                ReqDefRespHTML.push("</td>");
                 ReqDefRespHTML.push("<td><div class='reqdef_item'>"+ReqDefResponse.REQ_LIST[i].REQUISITION_FORMAT_TITLE)
                 ReqDefRespHTML.push("<input type=hidden class=reqdef_requisition_format_cd value='"+ReqDefResponse.REQ_LIST[i].REQUISITION_FORMAT_CD+"'></input>")
                 ReqDefRespHTML.push("</div></td>")
@@ -736,11 +739,11 @@ function ReqDefinitionManage()	{
                 ReqDefRespHTML.push("<td>"+ReqDefResponse.REQ_LIST[i].DESCRIPTION+"</td>")
                 
                 ReqDefRespHTML.push("<td>")
-                if (pdf_defined == 1) {ReqDefRespHTML.push("<input value='"+ReqDefResponse.REQ_LIST[i].DISPLAY+"'></input>")}
+                if (pdf_defined == 1) {ReqDefRespHTML.push("<input id='requisition_title' value='"+ReqDefResponse.REQ_LIST[i].DISPLAY+"'></input>")}
                 ReqDefRespHTML.push("</td>")
                 
                 ReqDefRespHTML.push("<td>")
-                if (pdf_defined == 1) {ReqDefRespHTML.push("<input value='"+ReqDefResponse.REQ_LIST[i].DEFINITION+"'></input>")}
+                if (pdf_defined == 1) {ReqDefRespHTML.push("<input id='requisition_definition' value='"+ReqDefResponse.REQ_LIST[i].DEFINITION+"'></input>")}
                 ReqDefRespHTML.push("</td>")
 
                 ReqDefRespHTML.push("<td>")
@@ -762,15 +765,39 @@ function ReqDefinitionManage()	{
                 ReqDefRespHTML.push("</td>")
 
                 ReqDefRespHTML.push("<td>")
-                if (pdf_defined == 1) {ReqDefRespHTML.push("<input value='"+ReqDefResponse.REQ_LIST[i].RM_PRIORITY_GROUP+"'></input>")}
+                if (pdf_defined == 1) {
+                    ReqDefRespHTML.push("<select id=rm_priority_group_selected>")
+                    for (var j = 0; j < ReqDefResponse.PARAMS.PRIORITY_GROUP_ORDER_MAX+1; j++) {
+                        if (ReqDefResponse.REQ_LIST[i].RM_PRIORITY_GROUP == (j+1)) {
+                            var rm_priority_group_selected = " selected"
+                        }   else    {
+                            var rm_priority_group_selected = " "
+                        }
+                        ReqDefRespHTML.push("<option value='"+(j+1)+"'"+rm_priority_group_selected+">"+(j+1)+"</option>")
+                    }
+                    ReqDefRespHTML.push("</select>")
+                }
                 ReqDefRespHTML.push("</td>")
 
                 ReqDefRespHTML.push("<td>")
-                if (pdf_defined == 1) {ReqDefRespHTML.push("<input value='"+ReqDefResponse.REQ_LIST[i].RM_PRIORITY_OEM+"'></input>")}
+                if (pdf_defined == 1) {
+                    ReqDefRespHTML.push("<select id=rm_priority_oem_selected>")
+
+                    for (var j = 0; j < ReqDefResponse.PARAMS.PRIORITY_CNT; j++) {
+                        if (ReqDefResponse.REQ_LIST[i].RM_PRIORITY_OEM == ReqDefResponse.PARAMS.PRIORITY_QUAL[j].VALUE) {
+                            var rm_priority_oem_selected = " selected"
+                        }   else    {
+                            var rm_priority_oem_selected = " "
+                        }
+                        ReqDefRespHTML.push("<option value='"+ReqDefResponse.PARAMS.PRIORITY_QUAL[j].VALUE+"'"+rm_priority_oem_selected+">"+ReqDefResponse.PARAMS.PRIORITY_QUAL[j].VALUE+"</option>")
+                    }
+
+                    ReqDefRespHTML.push("</select>")
+                }
                 ReqDefRespHTML.push("</td>")
                 
                 ReqDefRespHTML.push("<td>")
-                if (pdf_defined == 1) {ReqDefRespHTML.push("<input value='"+ReqDefResponse.REQ_LIST[i].RM_TYPE_DISPLAY+"'></input>")}
+                if (pdf_defined == 1) {ReqDefRespHTML.push("<input id=rm_type_display value='"+ReqDefResponse.REQ_LIST[i].RM_TYPE_DISPLAY+"'></input>")}
                 ReqDefRespHTML.push("</td>")
 
                 ReqDefRespHTML.push("<td>")
@@ -781,17 +808,67 @@ function ReqDefinitionManage()	{
                         var sched_loc_checked = '';
                     }
                     
-                    ReqDefRespHTML.push("<input type=checkbox id=sched_loc_check "+sched_loc_checked+"></input>")
+                    ReqDefRespHTML.push("<input type=checkbox value=1 id=sched_loc_check "+sched_loc_checked+"></input>")
                    
                 }
                 ReqDefRespHTML.push("</td>")
-                
-                ReqDefRespHTML.push("<div class=reqdef_req_entry>")
+
+                ReqDefRespHTML.push("<td>")
+                if (pdf_defined == 1) {ReqDefRespHTML.push("<input id=reqdef_subtype_processing value='"+ReqDefResponse.REQ_LIST[i].SUBTYPE_PROCESSING+"'></input>")}
+                ReqDefRespHTML.push("</td>")
+
+                ReqDefRespHTML.push("<td>")
+                if (pdf_defined == 1) {ReqDefRespHTML.push("<button class='reqdef_update'>Update</button>")}
+                ReqDefRespHTML.push("</td>")
                 ReqDefRespHTML.push("</tr>")
             }
             ReqDefRespHTML.push('</table>')
             $("#reqdef_table").html(ReqDefRespHTML.join(''))
             $("#reqdef_req_loading").hide()
+
+            $('.reqdef_update').click(function () {
+                var reqdef_requisition_format_cd = $(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#reqdef_req_format_cd').text();
+                var pRequisitionTitle = $(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#requisition_title').val();
+                var pRequisitionDefinition = $(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#requisition_definition').val();
+                var pOrdersPerReq = $(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#orders_per_req_ind').val();
+                var pPriorityGroup = $(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#rm_priority_group_selected').val();
+                var pPriorityOEM = $(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#rm_priority_oem_selected').val();
+                var pTypeDisplay = $(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#rm_type_display').val();
+                var pSchedLocCheck = +$(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#sched_loc_check').is(':checked');
+                var pSubtypeProcessing = +$(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#reqdef_subtype_processing').val();
+
+                param_list = []
+                param_list.push(pRequisitionTitle)
+                param_list.push(pRequisitionDefinition)
+                param_list.push(pOrdersPerReq)
+                param_list.push(pPriorityGroup)
+                param_list.push(pPriorityOEM)
+                param_list.push(pTypeDisplay)
+                param_list.push(pSchedLocCheck)
+                param_list.push(pSubtypeProcessing)
+                
+                var param_list_values = param_list.join(":")
+                
+                var param_set = []
+                param_set.push("~MINE~")
+                param_set.push(reqdef_requisition_format_cd)
+                param_set.push("~"+param_list_values+"~")       
+                
+                console.log("------- param_set="+param_set.join(','))
+                        
+                var ReqDefUpdateParams = window.external.XMLCclRequest();						
+                ReqDefUpdateParams.open("GET","rm_req_manager",false);
+                ReqDefUpdateParams.send(param_set.join(','));
+                if (ReqDefUpdateParams.readyState == 4 && ReqDefUpdateParams.status == 200) {
+                    console.log("-------- request processed")
+					var jsonReqDefUpdateParamsResponse = JSON.parse(ReqDefUpdateParams.responseText);
+                	var ReqDefUpdateParamsResponse = jsonReqDefUpdateParamsResponse.RECORD_DATA;
+						console.log("-------- ReqDefUpdateResponse="+JSON.stringify(ReqDefUpdateParamsResponse))
+                    } else {
+                    	console.log("-------- request failed readyState="+ReqDefUpdateParams.readyState+" ReqDefUpdateParams.status="+ReqDefUpdateParams.status)
+                    }
+                ReqDefinitionManage();
+            });
 
             $('.reqdef_item').click(function () {
                 var reqdef_requisition_format_cd = $(this).find('input.reqdef_requisition_format_cd').val()
