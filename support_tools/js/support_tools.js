@@ -720,6 +720,7 @@ function ReqDefinitionManage()	{
             ReqDefRespHTML.push('<th>Priority Grouping</th>')
             ReqDefRespHTML.push('<th>Scheduling Location</th>')
             ReqDefRespHTML.push('<th>Subtype Category</th>')
+            ReqDefRespHTML.push('<th>OEF Modify Trigger</th>')
             ReqDefRespHTML.push('<th>Update</th>')
             for (var i = 0; i < ReqDefResponse.REQ_LIST.length; i++) {
                 if (ReqDefResponse.REQ_LIST[i].CODE_VALUE > 0.0)    {
@@ -818,6 +819,26 @@ function ReqDefinitionManage()	{
                 ReqDefRespHTML.push("</td>")
 
                 ReqDefRespHTML.push("<td>")
+                if (pdf_defined == 1) {
+                    var any_change_checked = ' ';
+                    var all_formats_checked = ' ';
+                    var each_format_checked = ' ';
+                    if (ReqDefResponse.REQ_LIST[i].OE_CHANGE_PROCESSING == 0) {
+                        var any_change_checked = ' selected';
+                    } else if (ReqDefResponse.REQ_LIST[i].OE_CHANGE_PROCESSING == 1) { 
+                        var all_formats_checked = ' selected';
+                    } else if (ReqDefResponse.REQ_LIST[i].OE_CHANGE_PROCESSING == 2) { 
+                        var each_format_checked = ' selected';
+                    } 
+                    ReqDefRespHTML.push("<select id='reqdef_oe_change_processing'>")
+                    ReqDefRespHTML.push("<option value=0 "+any_change_checked+">All Changes</option>")
+                    ReqDefRespHTML.push("<option value=1 "+all_formats_checked+">All Formats</option>")
+                    ReqDefRespHTML.push("<option value=2 "+each_format_checked+">Individual Formats</option>")
+                    ReqDefRespHTML.push("</select>")
+                }
+                ReqDefRespHTML.push("</td>")
+
+                ReqDefRespHTML.push("<td>")
                 if (pdf_defined == 1) {ReqDefRespHTML.push("<button class='reqdef_update'>Update</button>")}
                 ReqDefRespHTML.push("</td>")
                 ReqDefRespHTML.push("</tr>")
@@ -835,7 +856,8 @@ function ReqDefinitionManage()	{
                 var pPriorityOEM = $(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#rm_priority_oem_selected').val();
                 var pTypeDisplay = $(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#rm_type_display').val();
                 var pSchedLocCheck = +$(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#sched_loc_check').is(':checked');
-                var pSubtypeProcessing = +$(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#reqdef_subtype_processing').val();
+                var pSubtypeProcessing = $(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#reqdef_subtype_processing').val();
+                var pOEChangeProcessing = $(this).parentsUntil('tr.reqdef_req_entry').siblings().children('#reqdef_oe_change_processing').val();
 
                 param_list = []
                 param_list.push(pRequisitionTitle)
@@ -846,6 +868,7 @@ function ReqDefinitionManage()	{
                 param_list.push(pTypeDisplay)
                 param_list.push(pSchedLocCheck)
                 param_list.push(pSubtypeProcessing)
+                param_list.push(pOEChangeProcessing)
                 
                 var param_list_values = param_list.join(":")
                 
