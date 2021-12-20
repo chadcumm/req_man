@@ -155,17 +155,17 @@ function mainLoad()		{
         $("#tool_content").off()
         $("#tool_content").html("")
         switch (selected_menu)	{
-            case "build_audit":		
+            case "build_audit":     AuditManage();	
                                     break;
             case "filter_manager":	FilterManage();
                                     break;
-            case "oef_manage":	OEFManage();
+            case "oef_manage":	    OEFManage();
                                     break;
             case "announcement":	
                                     break;
             case "location_manage":	LocationManage();
                                     break;
-            case "req_manage":	ReqDefinitionManage();
+            case "req_manage":	    ReqDefinitionManage();
                                     break;              
             default: 	
                                     break;
@@ -1005,4 +1005,102 @@ function FilterManage()	{
     }
     
     console.log("FilterManage ended");
+}
+
+function AuditManage()	{
+    console.log("AuditManage started");
+    
+    AuditHTML = [];
+    AuditHTML.push('<div id="audit_manage_content">');
+        AuditHTML.push('<table id="audit_manage_table">');
+        AuditHTML.push('<tr>');
+            AuditHTML.push('<td>');
+            AuditHTML.push('<select id="audit_manage_selection"></select>');
+            AuditHTML.push('</td>');
+            AuditHTML.push('</td>');
+            AuditHTML.push('</tr>');
+        AuditHTML.push('</table>');
+        AuditHTML.push('<table>')
+            AuditHTML.push('<tr>')
+                AuditHTML.push('<td>')
+                AuditHTML.push('</td>')
+                AuditHTML.push('<td>')
+                AuditHTML.push('</td>')
+            AuditHTML.push('</tr>')
+        AuditHTML.push('</table>')
+            AuditHTML.push('</div>');
+        AuditHTML.push('<div id="division_audit_menu" class="division_audit_menu"></div>');
+        AuditHTML.push('<div id="audit_table"></div>');
+
+    AuditHTML.push('</div>');
+    
+    $("#tool_content").html(AuditHTML.join(''))
+
+    //division_audit_menu
+    $("#division_audit_menu").css('height','20px')
+
+    $("#audit_manage_selection").append($('<option>',
+        {
+            value: "",
+            text : "Select Audit Tool"
+        }));
+
+    $("#audit_manage_selection").append($('<option>',
+        {
+            value: "audit_requisition_orders",
+            text : "Requistion/Order/Format Audits"
+        }));
+
+    $("#audit_manage_selection").append($('<option>',
+        {
+            value: "audit_locations",
+            text : "Location Audits"
+        }));
+
+    $("#audit_manage_selection").change(function() {
+            var selected_audit = $("#audit_manage_selection").val();
+            var selected_audit_text = $("#audit_manage_selection option:selected").text();
+
+            console.log("--- audit_manage_selection selected="+selected_audit_text+":"+selected_audit);
+
+            switch (selected_audit)	{
+                case "audit_requisition_orders":    AuditRequisitions();
+                                                    break;
+                case "audit_locations":	        
+                                                    break;
+                default: 	
+                                        break;
+            } 
+    });
+
+    function AuditRequisitions()    {
+        var param_set = []
+        param_set.push("~MINE~")
+        console.log("------- param_set="+param_set.join(','))
+                
+            var AuditReq = window.external.XMLCclRequest();						
+            AuditReq.open("GET","rm_audit_manager",false);
+        	AuditReq.send(param_set.join(','));
+            if (AuditReq.readyState == 4 && AuditReq.status == 200) {
+                console.log("-------- request processed")
+				var jsonAuditReqResponse = JSON.parse(AuditReq.responseText);
+        		var AuditReqResponse = jsonAuditReqResponse.RECORD_DATA;
+				console.log("-------- AuditReqResponse="+JSON.stringify(AuditReqResponse))
+                
+                AuditReqListHTML = [];
+
+                AuditReqListHTML.push('Select a Requsition Format to Audit')
+                AuditReqListHTML.push('<table>')
+                
+
+                AuditReqListHTML.push('</table>')
+
+                $("#audit_table").html(AuditReqListHTML.join(''))
+
+            } else {
+            	console.log("-------- request failed readyState="+AuditReq.readyState+" AuditReq.status="+AuditReq.status)
+            }
+    }
+    
+    console.log("AuditManage ended");
 }
