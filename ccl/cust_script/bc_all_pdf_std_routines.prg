@@ -91,6 +91,7 @@ subroutine sAddUpdateCodeValueExtension(pCodeValue,pCVEFieldName,pCVEFieldValue,
         where code_value = pCodeValue and code_value > 0.0 and field_name = pCVEFieldName
 
         if (curqual = 1)
+            commit 
             set CVEReturnValue = TRUE
         else
             set stat = initrec(4171666_request)
