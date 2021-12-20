@@ -13,6 +13,7 @@ Comments: Include File which holds frequently used PDF Standard Sub-routines
 Rev  Date         Jira       Programmer             Comment
 ---  -----------  ---------  ---------------------  --------------------------------------------------------------------
 000  13-Dec-2021  CST-145166 Chad Cummings          Inital Release with subroutines relevant to JIRA
+001  17-Dec-2021  CST-130820 Chad Cummings          New subroutines 
 ***********************************************************************************************************************/
 drop program bc_all_pdf_std_routines go
 create program bc_all_pdf_std_routines
@@ -47,8 +48,74 @@ declare sIsSchedulingValueCD(pOEFieldValueCD=f8) = i2 with copy, persist
 declare sGetRequisitionDefinitions(null) = vc with copy, persist
 declare sCheckforPaperRequisition(pRequisitionFormatCD=f8) = i2 with copy, persist
 declare sGetLocationHierarchy(null) = vc with copy, persist
+declare sAddUpdateCodeValueExtension(pCodeValue=f8,pCVEFieldName=vc,pCVEFieldValue=vc,pCVEFieldType=i2) = i2 with copy, persist
 
 call sPopulateRecVariables(null)
+
+
+;==========================================================================================
+; Return a TRUE or FALSE is the updated or new addition of the code_value_extension for the 
+; supplied code_value
+;
+; USAGE: call sAddUpdateCodeValueExtension(CODE_VALUE,"FIELD_NAME","FIELD_VALUE",1) 
+;==========================================================================================
+subroutine sAddUpdateCodeValueExtension(pCodeValue,pCVEFieldName,pCVEFieldValue,pCVEFieldType)
+    call sPDFRoutineLog(build2(
+            'start sAddUpdateCodeValueExtension(',pCodeValue,',',pCVEFieldName,',',pCVEFieldValue,',',pCVEFieldType,')'))
+    
+    declare pCodeSet = i4 with noconstant(0)
+
+    record 4171666_request (
+        1 extension_list [*]   
+	        2 action_type_flag = i2   
+	        2 code_set = i4   
+	        2 code_value = f8   
+	        2 field_name = vc  
+	        2 field_type = i4   
+	        2 field_value = vc  
+	) with protect
+
+    declare i=i2 with noconstant(0), protect
+    declare CVEReturnValue = i2 with noconstant(FALSE)
+
+    select into "nl:" from code_value cv where cv.code_value = pCodeValue detail pCodeSet = cv.code_set with nocounter
+
+    if ((pCodeValue > 0.0) and (pCVEFieldName > "") and (pCodeSet > 0))
+
+        update into code_value_extension
+        set 
+            field_value = pCVEFieldValue
+        ,updt_dt_tm = cnvtdatetime(curdate,curtime3)
+        ,updt_id = reqinfo->updt_id
+        ,updt_cnt = (updt_cnt + 1)
+        where code_value = pCodeValue and code_value > 0.0 and field_name = pCVEFieldName
+
+        if (curqual = 1)
+            set CVEReturnValue = TRUE
+        else
+            set stat = initrec(4171666_request)
+            free record 4171666_reply
+
+            set stat = alterlist(4171666_request->extension_list,1)
+            set 4171666_request->extension_list[1].action_type_flag = 1
+            set 4171666_request->extension_list[1].code_value = pCodeValue
+            set 4171666_request->extension_list[1].code_set = pCodeSet
+            set 4171666_request->extension_list[1].field_name = pCVEFieldName
+            set 4171666_request->extension_list[1].field_value = pCVEFieldValue
+            set 4171666_request->extension_list[1].field_type = pCVEFieldType
+
+            call echorecord(4171666_request)
+		    set stat = tdbexecute(4170105,4170151,4171666,"REC",4171666_request,"REC",4171666_reply)
+		    call echorecord(4171666_reply)
+
+            if (4171666_reply->status_data->status = "S")
+                set CVEReturnValue = TRUE
+            endif
+        endif
+    endif
+    return (CVEReturnValue)
+    call sPDFRoutineLog(build2('end sAddUpdateCodeValueExtension(',pOEFieldValueCD,")"))
+end ;sAddUpdateCodeValueExtension
 
 
 ;==========================================================================================

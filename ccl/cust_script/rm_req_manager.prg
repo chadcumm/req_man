@@ -273,141 +273,59 @@ if (t_rec->cons.requisition_format_cd > 0.0)
             	,updt_cnt = (updt_cnt + 1)
         		where code_value = t_rec->cons.ippdf_code_value and code_value > 0.0
        		commit
-    		
-            set stat = initrec(4171666_request)
-            free record 4171666_reply
-            set k=0
 
     		if (t_rec->cons.new_ippdf_priority_group > "")
-                update into code_value_extension
-                 set 
-                     field_value = t_rec->cons.new_ippdf_priority_group
-                    ,updt_dt_tm = cnvtdatetime(curdate,curtime3)
-            	    ,updt_id = reqinfo->updt_id
-            	    ,updt_cnt = (updt_cnt + 1)
-                where code_value = t_rec->cons.ippdf_code_value and code_value > 0.0 and field_name = "RM_PRIORITY_GROUP"
-                
-                if (curqual = 0)
-                    set k = (k+1)
-                    set stat = alterlist(4171666_request->extension_list,k)
-                    set 4171666_request->extension_list[k].action_type_flag = 1
-                    set 4171666_request->extension_list[k].code_value = t_rec->cons.ippdf_code_value
-                    set 4171666_request->extension_list[k].code_set = bc_all_pdf_std_variables->code_set.printtopdf
-                    set 4171666_request->extension_list[k].field_name = "RM_PRIORITY_GROUP"
-                    set 4171666_request->extension_list[k].field_value = t_rec->cons.new_ippdf_priority_group
-                    set 4171666_request->extension_list[k].field_type = 1
-                endif
+                set stat = sAddUpdateCodeValueExtension(
+                                                             value(t_rec->cons.ippdf_code_value)
+                                                            ,"RM_PRIORITY_GROUP"
+                                                            ,value(t_rec->cons.new_ippdf_priority_group)
+                                                            ,2
+                                                        )
             endif
 
             if (t_rec->cons.new_ippdf_priority_oem > "")
-                update into code_value_extension
-                 set 
-                     field_value = t_rec->cons.new_ippdf_priority_oem
-                    ,updt_dt_tm = cnvtdatetime(curdate,curtime3)
-            	    ,updt_id = reqinfo->updt_id
-            	    ,updt_cnt = (updt_cnt + 1)
-                where code_value = t_rec->cons.ippdf_code_value and code_value > 0.0 and field_name = "RM_PRIORITY_OEM"
-                
-                if (curqual = 0)
-                    set k = (k+1)
-                    set stat = alterlist(4171666_request->extension_list,k)
-                    set 4171666_request->extension_list[k].action_type_flag = 1
-                    set 4171666_request->extension_list[k].code_value = t_rec->cons.ippdf_code_value
-                    set 4171666_request->extension_list[k].code_set = bc_all_pdf_std_variables->code_set.printtopdf
-                    set 4171666_request->extension_list[k].field_name = "RM_PRIORITY_OEM"
-                    set 4171666_request->extension_list[k].field_value = t_rec->cons.new_ippdf_priority_oem
-                    set 4171666_request->extension_list[k].field_type = 1
-                endif
+                set stat = sAddUpdateCodeValueExtension(
+                                                             value(t_rec->cons.ippdf_code_value)
+                                                            ,"RM_PRIORITY_OEM"
+                                                            ,value(t_rec->cons.new_ippdf_priority_oem)
+                                                            ,2
+                                                        )
             endif
 
             if (t_rec->cons.new_ippdf_type_display > "")
-                update into code_value_extension
-                 set 
-                     field_value = t_rec->cons.new_ippdf_type_display
-                    ,updt_dt_tm = cnvtdatetime(curdate,curtime3)
-            	    ,updt_id = reqinfo->updt_id
-            	    ,updt_cnt = (updt_cnt + 1)
-                where code_value = t_rec->cons.ippdf_code_value and code_value > 0.0 and field_name = "RM_TYPE_DISPLAY"
-                
-                if (curqual = 0)
-                    set k = (k+1)
-                    set stat = alterlist(4171666_request->extension_list,k)
-                    set 4171666_request->extension_list[k].action_type_flag = 1
-                    set 4171666_request->extension_list[k].code_value = t_rec->cons.ippdf_code_value
-                    set 4171666_request->extension_list[k].code_set = bc_all_pdf_std_variables->code_set.printtopdf
-                    set 4171666_request->extension_list[k].field_name = "RM_TYPE_DISPLAY"
-                    set 4171666_request->extension_list[k].field_value = t_rec->cons.new_ippdf_type_display
-                    set 4171666_request->extension_list[k].field_type = 1
-                endif
+                set stat = sAddUpdateCodeValueExtension(
+                                                             value(t_rec->cons.ippdf_code_value)
+                                                            ,"RM_TYPE_DISPLAY"
+                                                            ,value(t_rec->cons.new_ippdf_type_display)
+                                                            ,2
+                                                        )
             endif
 
             if (t_rec->cons.new_ippdf_sched_loc_check > "")
-                update into code_value_extension
-                 set 
-                     field_value = t_rec->cons.new_ippdf_sched_loc_check
-                    ,updt_dt_tm = cnvtdatetime(curdate,curtime3)
-            	    ,updt_id = reqinfo->updt_id
-            	    ,updt_cnt = (updt_cnt + 1)
-                where code_value = t_rec->cons.ippdf_code_value and code_value > 0.0 and field_name = "SCHED_LOC_CHECK"
-                
-                if (curqual = 0)
-                    set k = (k+1)
-                    set stat = alterlist(4171666_request->extension_list,k)
-                    set 4171666_request->extension_list[k].action_type_flag = 1
-                    set 4171666_request->extension_list[k].code_value = t_rec->cons.ippdf_code_value
-                    set 4171666_request->extension_list[k].code_set = bc_all_pdf_std_variables->code_set.printtopdf
-                    set 4171666_request->extension_list[k].field_name = "SCHED_LOC_CHECK"
-                    set 4171666_request->extension_list[k].field_value = t_rec->cons.new_ippdf_sched_loc_check
-                    set 4171666_request->extension_list[k].field_type = 1
-                endif
+                set stat = sAddUpdateCodeValueExtension(
+                                                             value(t_rec->cons.ippdf_code_value)
+                                                            ,"SCHED_LOC_CHECK"
+                                                            ,value(t_rec->cons.new_ippdf_sched_loc_check)
+                                                            ,2
+                                                        )
             endif
 
             if (t_rec->cons.new_ippdf_subtype_processing > "")
-                update into code_value_extension
-                 set 
-                     field_value = t_rec->cons.new_ippdf_subtype_processing
-                    ,updt_dt_tm = cnvtdatetime(curdate,curtime3)
-            	    ,updt_id = reqinfo->updt_id
-            	    ,updt_cnt = (updt_cnt + 1)
-                where code_value = t_rec->cons.ippdf_code_value and code_value > 0.0 and field_name = "SUBTYPE_PROCESSING"
-                
-                if (curqual = 0)
-                    set k = (k+1)
-                    set stat = alterlist(4171666_request->extension_list,k)
-                    set 4171666_request->extension_list[k].action_type_flag = 1
-                    set 4171666_request->extension_list[k].code_value = t_rec->cons.ippdf_code_value
-                    set 4171666_request->extension_list[k].code_set = bc_all_pdf_std_variables->code_set.printtopdf
-                    set 4171666_request->extension_list[k].field_name = "SUBTYPE_PROCESSING"
-                    set 4171666_request->extension_list[k].field_value = t_rec->cons.new_ippdf_subtype_processing
-                    set 4171666_request->extension_list[k].field_type = 1
-                endif
+                set stat = sAddUpdateCodeValueExtension(
+                                                             value(t_rec->cons.ippdf_code_value)
+                                                            ,"SUBTYPE_PROCESSING"
+                                                            ,value(t_rec->cons.new_ippdf_subtype_processing)
+                                                            ,2
+                                                        )
             endif
 
             if (t_rec->cons.new_ippdf_oe_change_processing > "")
-                update into code_value_extension
-                 set 
-                     field_value = t_rec->cons.new_ippdf_oe_change_processing
-                    ,updt_dt_tm = cnvtdatetime(curdate,curtime3)
-            	    ,updt_id = reqinfo->updt_id
-            	    ,updt_cnt = (updt_cnt + 1)
-                where code_value = t_rec->cons.ippdf_code_value and code_value > 0.0 and field_name = "OE_CHANGE_PROCESSING"
-                
-                if (curqual = 0)
-                    set k = (k+1)
-                    set stat = alterlist(4171666_request->extension_list,k)
-                    set 4171666_request->extension_list[k].action_type_flag = 1
-                    set 4171666_request->extension_list[k].code_value = t_rec->cons.ippdf_code_value
-                    set 4171666_request->extension_list[k].code_set = bc_all_pdf_std_variables->code_set.printtopdf
-                    set 4171666_request->extension_list[k].field_name = "OE_CHANGE_PROCESSING"
-                    set 4171666_request->extension_list[k].field_value = t_rec->cons.new_ippdf_oe_change_processing
-                    set 4171666_request->extension_list[k].field_type = 1
-                endif
-            endif
-
-            if (k>0)
-                call echorecord(4171666_request)
-		        set stat = tdbexecute(4170105,4170151,4171666,"REC",4171666_request,"REC",4171666_reply)
-		        call echorecord(4171666_reply)
+                set stat = sAddUpdateCodeValueExtension(
+                                                             value(t_rec->cons.ippdf_code_value)
+                                                            ,"OE_CHANGE_PROCESSING"
+                                                            ,value(t_rec->cons.new_ippdf_oe_change_processing)
+                                                            ,2
+                                                        )
             endif
     	endif
     else
@@ -437,60 +355,48 @@ if (t_rec->cons.requisition_format_cd > 0.0)
             commit
 		endif
 
-        set stat = initrec(4171666_request)
-        free record 4171666_reply
-
         /* To-Do
         
         "EXCLUDE_DATE_START": 
         "EXCLUDE_DATE_END": 
-         */                   
-		set stat = alterlist(4171666_request->extension_list,6)
-		set 4171666_request->extension_list[1].action_type_flag = 1
-		set 4171666_request->extension_list[1].code_value = t_rec->cons.rm_code_value
-		set 4171666_request->extension_list[1].code_set = bc_all_pdf_std_variables->code_set.printtopdf
-		set 4171666_request->extension_list[1].field_name = "RM_PRIORITY_GROUP"
-		set 4171666_request->extension_list[1].field_value = "1"
-		set 4171666_request->extension_list[1].field_type = 1
-		
-		set 4171666_request->extension_list[2].action_type_flag = 1
-		set 4171666_request->extension_list[2].code_value = t_rec->cons.rm_code_value
-		set 4171666_request->extension_list[2].code_set = bc_all_pdf_std_variables->code_set.printtopdf
-		set 4171666_request->extension_list[2].field_name = "RM_PRIORITY_OEM"
-		set 4171666_request->extension_list[2].field_value = "Priority"
-		set 4171666_request->extension_list[2].field_type = 1
-		
-		set 4171666_request->extension_list[3].action_type_flag = 1
-		set 4171666_request->extension_list[3].code_value = t_rec->cons.rm_code_value
-		set 4171666_request->extension_list[3].code_set = bc_all_pdf_std_variables->code_set.printtopdf
-		set 4171666_request->extension_list[3].field_name = "RM_TYPE_DISPLAY"
-		set 4171666_request->extension_list[3].field_value = "Lab, MI, Cardiology"
-		set 4171666_request->extension_list[3].field_type = 1
+         */
 
-        set 4171666_request->extension_list[4].action_type_flag = 1
-		set 4171666_request->extension_list[4].code_value = t_rec->cons.rm_code_value
-		set 4171666_request->extension_list[4].code_set = bc_all_pdf_std_variables->code_set.printtopdf
-		set 4171666_request->extension_list[4].field_name = "SCHED_LOC_CHECK"
-		set 4171666_request->extension_list[4].field_value = "1"
-		set 4171666_request->extension_list[4].field_type = 1
-
-        set 4171666_request->extension_list[5].action_type_flag = 1
-		set 4171666_request->extension_list[5].code_value = t_rec->cons.rm_code_value
-		set 4171666_request->extension_list[5].code_set = bc_all_pdf_std_variables->code_set.printtopdf
-		set 4171666_request->extension_list[5].field_name = "SUBTYPE_PROCESSING"
-		set 4171666_request->extension_list[5].field_value = "activity_type_cd"
-		set 4171666_request->extension_list[5].field_type = 1
-        
-        set 4171666_request->extension_list[6].action_type_flag = 1
-		set 4171666_request->extension_list[6].code_value = t_rec->cons.rm_code_value
-		set 4171666_request->extension_list[6].code_set = bc_all_pdf_std_variables->code_set.printtopdf
-		set 4171666_request->extension_list[6].field_name = "OE_CHANGE_PROCESSING"
-		set 4171666_request->extension_list[6].field_value = "0"
-		set 4171666_request->extension_list[6].field_type = 1      
-		
-		call echorecord(4171666_request)
-		set stat = tdbexecute(4170105,4170151,4171666,"REC",4171666_request,"REC",4171666_reply)
-		call echorecord(4171666_reply)
+        set stat = sAddUpdateCodeValueExtension(
+                                                             value(t_rec->cons.rm_code_value)
+                                                            ,"RM_PRIORITY_GROUP"
+                                                            ,"1"
+                                                            ,2
+                                                        )
+        set stat = sAddUpdateCodeValueExtension(
+                                                             value(t_rec->cons.rm_code_value)
+                                                            ,"RM_PRIORITY_OEM"
+                                                            ,"Priority"
+                                                            ,2
+                                                        )
+        set stat = sAddUpdateCodeValueExtension(
+                                                             value(t_rec->cons.rm_code_value)
+                                                            ,"RM_TYPE_DISPLAY"
+                                                            ,"Lab, MI, Cardiology"
+                                                            ,2
+                                                        )
+        set stat = sAddUpdateCodeValueExtension(
+                                                             value(t_rec->cons.rm_code_value)
+                                                            ,"SCHED_LOC_CHECK"
+                                                            ,"1"
+                                                            ,2
+                                                        )
+        set stat = sAddUpdateCodeValueExtension(
+                                                             value(t_rec->cons.rm_code_value)
+                                                            ,"SUBTYPE_PROCESSING"
+                                                            ,"activity_type_cd"
+                                                            ,2
+                                                        )
+        set stat = sAddUpdateCodeValueExtension(
+                                                             value(t_rec->cons.rm_code_value)
+                                                            ,"OE_CHANGE_PROCESSING"
+                                                            ,"0"
+                                                            ,2
+                                                        )              
     endif
  
     call echorecord(t_rec)
