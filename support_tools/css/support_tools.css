@@ -222,3 +222,8 @@ table.req_audit_detail_table td, table.req_audit_detail_table th {
   cursor: pointer;
   text-decoration: underline;
 }
+
+.audit_req_item_oe_order_link  {
+  cursor: pointer;
+  text-decoration: underline;
+}

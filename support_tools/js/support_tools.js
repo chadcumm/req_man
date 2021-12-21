@@ -1196,26 +1196,46 @@ function AuditManage()	{
                                     AuditReqListDetailHTML.push(ReqAuditReqResponse.OEF_QUAL[j].OE_FORMAT_ID)
                                 AuditReqListDetailHTML.push('</td>')
                                 AuditReqListDetailHTML.push('<td>')
+                                    AuditReqListDetailHTML.push('<div class=audit_req_item_oe_format_link id=audit_req_item_oe_format_link>')
                                     AuditReqListDetailHTML.push(ReqAuditReqResponse.OEF_QUAL[j].DESCRIPTION)
-                                AuditReqListDetailHTML.push('</td>')
+                                    AuditReqListDetailHTML.push('</div>')
+                                    AuditReqListDetailHTML.push('<div class=hidden_value id=audit_req_item_oe_format_id>')
+                                        AuditReqListDetailHTML.push(ReqAuditReqResponse.OEF_QUAL[j].OE_FORMAT_ID)
+                                        AuditReqListDetailHTML.push('</div>')
+                                    AuditReqListDetailHTML.push('</td>')
                                 AuditReqListDetailHTML.push('<td>')
                                     AuditReqListDetailHTML.push(ReqAuditReqResponse.OEF_QUAL[j].OE_FIELD_CNT)
                                 AuditReqListDetailHTML.push('</td>')
                                 AuditReqListDetailHTML.push('<td>')
-                                    AuditReqListDetailHTML.push('<div class=audit_req_item_oe_format_link id=audit_req_item_oe_format_link>')
+                                    AuditReqListDetailHTML.push('<div class=audit_req_item_oe_order_link id=audit_req_item_oe_order_link>')
                                         AuditReqListDetailHTML.push(ReqAuditReqResponse.OEF_QUAL[j].ORDER_CNT)
                                     AuditReqListDetailHTML.push('</div>')
                                     AuditReqListDetailHTML.push('<div class=hidden_value id=audit_req_item_oe_format_id>')
                                         AuditReqListDetailHTML.push(ReqAuditReqResponse.OEF_QUAL[j].OE_FORMAT_ID)
                                         AuditReqListDetailHTML.push('</div>')
                                 AuditReqListDetailHTML.push('</td>')
-                                AuditReqListDetailHTML.push('<td>')
-                                    AuditReqListDetailHTML.push(ReqAuditReqResponse.OEF_QUAL[j].PASS_IND)
+                                
+                                if (ReqAuditReqResponse.OEF_QUAL[j].PASS_IND == 1)  {
+                                    var cell_color = 'green';
+                                    var cell_content = 'Pass'
+                                } 
+                                else if (ReqAuditReqResponse.OEF_QUAL[j].PASS_IND == 0)  {
+                                    var cell_color = 'red';
+                                    var cell_content = 'Failed'
+                                }   else    {
+                                    var cell_color = '';
+                                    var cell_content = 'Inconclusive' 
+                                }
+                                
+                                AuditReqListDetailHTML.push('<td style="background-color:'+cell_color+'">')
+                                    AuditReqListDetailHTML.push(cell_content)
                                 AuditReqListDetailHTML.push('</td>')
                             AuditReqListDetailHTML.push('</tr>')
                         }
 
                         AuditReqListDetailHTML.push('</table>')
+                        AuditReqListHTML.push('<div class=req_audit_format_table_details id=req_audit_format_table_details>')
+                        AuditReqListHTML.push('</div')
 
                         $("#req_audit_table_details").html(AuditReqListDetailHTML.join(''))
 
@@ -1223,6 +1243,11 @@ function AuditManage()	{
 
                             var pOEFormatID = $(this).siblings('#audit_req_item_oe_format_id').text();
                             console.log("-- pOEFormatID="+pOEFormatID)
+
+                            AuditOrderFormatDetailHTML = [];
+                            AuditOrderFormatDetailHTML.push('')
+                            
+                            $("#req_audit_format_table_details").html(AuditOrderFormatDetailHTML.join(''))
                         });
                     };
                 });
