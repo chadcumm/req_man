@@ -1090,12 +1090,142 @@ function AuditManage()	{
                 AuditReqListHTML = [];
 
                 AuditReqListHTML.push('Select a Requsition Format to Audit')
-                AuditReqListHTML.push('<table>')
-                
+                AuditReqListHTML.push('<br/><br/>')
+                AuditReqListHTML.push('<table class=req_audit_table>')
+                AuditReqListHTML.push('<tr class=audit_req_header>')
+                    AuditReqListHTML.push('<th>')
+                        AuditReqListHTML.push('Requisition Code Value')
+                    AuditReqListHTML.push('</th>')
+                    AuditReqListHTML.push('<th>')
+                        AuditReqListHTML.push('Requisition Title')
+                    AuditReqListHTML.push('</th>')
+                    AuditReqListHTML.push('<th>')
+                        AuditReqListHTML.push('Format Display')
+                    AuditReqListHTML.push('</th>')
+                    AuditReqListHTML.push('<th>')
+                        AuditReqListHTML.push('Format Script')
+                    AuditReqListHTML.push('</th>')
+                AuditReqListHTML.push('</tr>')
+
+                for (var i = 0; i < AuditReqResponse.REQ_LIST.length; i++) {
+                    if (AuditReqResponse.REQ_LIST[i].CODE_VALUE > 0.0)    {
+                        var pdf_defined = 1
+                    } else {
+                        var pdf_defined = 0
+                    }
+
+                    if (pdf_defined == 1)   {
+                        AuditReqListHTML.push('<tr class=audit_req_item>')
+                            AuditReqListHTML.push('<td>')
+                                AuditReqListHTML.push(AuditReqResponse.REQ_LIST[i].REQUISITION_FORMAT_CD)
+                            AuditReqListHTML.push('</td>')
+                            AuditReqListHTML.push('<td>')
+                                AuditReqListHTML.push(AuditReqResponse.REQ_LIST[i].DISPLAY)
+                            AuditReqListHTML.push('</td>')
+                            AuditReqListHTML.push('<td>')
+                                AuditReqListHTML.push('<div class=audit_req_item_link>')
+                                    AuditReqListHTML.push(AuditReqResponse.REQ_LIST[i].REQUISITION_FORMAT_TITLE)
+                                AuditReqListHTML.push('</div>')
+                                AuditReqListHTML.push('<div id=audit_req_item_code_value class=hidden_value>')
+                                    AuditReqListHTML.push(AuditReqResponse.REQ_LIST[i].CODE_VAlUE)
+                                AuditReqListHTML.push('</div>')
+                                AuditReqListHTML.push('<div id=audit_req_item_requisition_format_cd class=hidden_value>')
+                                    AuditReqListHTML.push(AuditReqResponse.REQ_LIST[i].REQUISITION_FORMAT_CD)
+                                AuditReqListHTML.push('</div>')
+                            AuditReqListHTML.push('</td>')
+                            AuditReqListHTML.push('<td>')
+                                AuditReqListHTML.push(AuditReqResponse.REQ_LIST[i].DESCRIPTION)
+                            AuditReqListHTML.push('</td>')
+                        AuditReqListHTML.push('</tr>')
+                    }
+                }
 
                 AuditReqListHTML.push('</table>')
+                AuditReqListHTML.push('<div class=req_audit_table_details id=req_audit_table_details>')
+                AuditReqListHTML.push('</div')
 
                 $("#audit_table").html(AuditReqListHTML.join(''))
+
+                $(".audit_req_item_link").click(function() { 
+
+                    var pRequsitionFormatCode = $(this).siblings('#audit_req_item_requisition_format_cd').text();
+                    console.log("-- pRequsitionFormatCode="+pRequsitionFormatCode)
+                    
+                    var req_param_set = []
+                    req_param_set.push("~MINE~")
+                    req_param_set.push(pRequsitionFormatCode)
+                    req_param_set.push("~oef~")
+                    console.log("------- req_param_set="+req_param_set.join(','))
+                
+                    var ReqAuditReq = window.external.XMLCclRequest();						
+                    ReqAuditReq.open("GET","rm_audit_manager",false);
+                    ReqAuditReq.send(req_param_set.join(','));
+
+                    if (ReqAuditReq.readyState == 4 && ReqAuditReq.status == 200) {
+                        console.log("-------- request processed")
+                        var jsonReqAuditReqResponse = JSON.parse(ReqAuditReq.responseText);
+                        var ReqAuditReqResponse = jsonReqAuditReqResponse.RECORD_DATA;
+
+                        AuditReqListDetailHTML = [];
+                        AuditReqListDetailHTML.push('<br/><br/>')
+                        AuditReqListDetailHTML.push('Select an Order Entry Format for Details')
+                        AuditReqListDetailHTML.push('<br/><br/>')
+                        AuditReqListDetailHTML.push('<table class=req_audit_detail_table>')
+                            AuditReqListDetailHTML.push('<tr>')
+                                AuditReqListDetailHTML.push('<th>')
+                                    AuditReqListDetailHTML.push('OE Format ID')
+                                AuditReqListDetailHTML.push('</th>')
+                                AuditReqListDetailHTML.push('<th>')
+                                    AuditReqListDetailHTML.push('OE Format Name')
+                                AuditReqListDetailHTML.push('</th>')
+                                AuditReqListDetailHTML.push('<th>')
+                                    AuditReqListDetailHTML.push('OE Field Count')
+                                AuditReqListDetailHTML.push('</th>')
+                                AuditReqListDetailHTML.push('<th>')
+                                    AuditReqListDetailHTML.push('Order Count')
+                                AuditReqListDetailHTML.push('</th>')
+                                AuditReqListDetailHTML.push('<th>')
+                                    AuditReqListDetailHTML.push('Validation')
+                                AuditReqListDetailHTML.push('</th>')
+                            AuditReqListDetailHTML.push('</tr>')
+                        console.log("-------- ReqAuditReqResponse.OEF_CNT="+ReqAuditReqResponse.OEF_CNT)
+                        for (j=0; j < ReqAuditReqResponse.OEF_CNT; j++) {
+                            console.log("--------- Format Name="+ReqAuditReqResponse.OEF_QUAL[j].DESCRIPTION)
+                            AuditReqListDetailHTML.push('<tr>')
+                                AuditReqListDetailHTML.push('<td>')
+                                    AuditReqListDetailHTML.push(ReqAuditReqResponse.OEF_QUAL[j].OE_FORMAT_ID)
+                                AuditReqListDetailHTML.push('</td>')
+                                AuditReqListDetailHTML.push('<td>')
+                                    AuditReqListDetailHTML.push(ReqAuditReqResponse.OEF_QUAL[j].DESCRIPTION)
+                                AuditReqListDetailHTML.push('</td>')
+                                AuditReqListDetailHTML.push('<td>')
+                                    AuditReqListDetailHTML.push(ReqAuditReqResponse.OEF_QUAL[j].OE_FIELD_CNT)
+                                AuditReqListDetailHTML.push('</td>')
+                                AuditReqListDetailHTML.push('<td>')
+                                    AuditReqListDetailHTML.push('<div class=audit_req_item_oe_format_link id=audit_req_item_oe_format_link>')
+                                        AuditReqListDetailHTML.push(ReqAuditReqResponse.OEF_QUAL[j].ORDER_CNT)
+                                    AuditReqListDetailHTML.push('</div>')
+                                    AuditReqListDetailHTML.push('<div class=hidden_value id=audit_req_item_oe_format_id>')
+                                        AuditReqListDetailHTML.push(ReqAuditReqResponse.OEF_QUAL[j].OE_FORMAT_ID)
+                                        AuditReqListDetailHTML.push('</div>')
+                                AuditReqListDetailHTML.push('</td>')
+                                AuditReqListDetailHTML.push('<td>')
+                                    AuditReqListDetailHTML.push(ReqAuditReqResponse.OEF_QUAL[j].PASS_IND)
+                                AuditReqListDetailHTML.push('</td>')
+                            AuditReqListDetailHTML.push('</tr>')
+                        }
+
+                        AuditReqListDetailHTML.push('</table>')
+
+                        $("#req_audit_table_details").html(AuditReqListDetailHTML.join(''))
+
+                        $(".audit_req_item_oe_format_link").click(function() { 
+
+                            var pOEFormatID = $(this).siblings('#audit_req_item_oe_format_id').text();
+                            console.log("-- pOEFormatID="+pOEFormatID)
+                        });
+                    };
+                });
 
             } else {
             	console.log("-------- request failed readyState="+AuditReq.readyState+" AuditReq.status="+AuditReq.status)

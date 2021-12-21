@@ -198,3 +198,27 @@ table.filter_reqdef_table td, table.filter_reqdef_table th {
   cursor: pointer;
   text-decoration: underline;
 }
+
+table.req_audit_table td, table.req_audit_table th {
+  padding: 5px;
+  border: 1px solid black
+}
+
+.hidden_value {
+  display: none;
+}
+
+.audit_req_item_link  {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+table.req_audit_detail_table td, table.req_audit_detail_table th {
+  padding: 5px;
+  border: 1px solid black
+}
+
+.audit_req_item_oe_format_link  {
+  cursor: pointer;
+  text-decoration: underline;
+}
