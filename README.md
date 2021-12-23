@@ -108,3 +108,7 @@ Requisition Manager and Integrated Print-to-PDF
 ### RM_REG_REQ_BY_PATHWAY
     Regenerate Requisitions by pathway ID
 ### RM_FILTER_PUSH     
+
+# Change Log
+## JIRA
+### CST-130820 Spec Diag - iPPDF Update to include outstanding Spec Diagnostic Requisitions
