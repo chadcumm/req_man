@@ -112,3 +112,9 @@ Requisition Manager and Integrated Print-to-PDF
     Standard set of routines that are shared across the scripts
 ### BC_ALL_PDF_STD_ROUTINES_JSON
     Returns the data from the routines in JSON format for MPages
+
+
+# Change Log
+## JIRA
+### CST-140781 LAB - Create a Notification for Lab Orders with External Requisition
+
