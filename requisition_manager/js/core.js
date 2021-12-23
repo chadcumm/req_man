@@ -453,7 +453,7 @@ function OpenSupportTools() {
 		//var parentelement = $(this).parents('dt.pwx_fcr_content_task_dt') 
 		//var parenttaskid = $(parentelement).children('.pwx_task_id_hidden').text()
 		var fwObj = window.external.DiscernObjectFactory("PVFRAMEWORKLINK");
-		var cclParams = '"MINE","1.1.0",0'
+		var cclParams = '"MINE","",1'
 		fwObj.SetPopupStringProp("REPORT_NAME","rm_support_tools");
 		fwObj.SetPopupStringProp("REPORT_PARAM",cclParams);
 		fwObj.SetPopupBoolProp("SHOW_BUTTONS",0);
