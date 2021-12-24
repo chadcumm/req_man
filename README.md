@@ -121,3 +121,47 @@ Requisition Manager and Integrated Print-to-PDF
 ### CST-145166 Lab: Update Lab Requisition Logic to Separate Lab Orders by Collection Date (iPPDF/Requisition Manager)
 ## Branches
 ### SUP-20211214 Support Tools Update
+
+# Install / Migration Steps
+## release/1.0.1.12
+### Files to Move
+- A: ccl/cust_script/bc_all_pdf_std_routines.prg
+- A: ccl/cust_script/bc_all_pdf_std_routines_json.prg
+
+- M: ccl/cust_script/bc_all_mp_multi_pdf_viewer.prg
+- M: ccl/cust_script/bc_all_mp_pdf_viewer.prg
+- M: ccl/cust_script/dev_all_mp_pdf_url.prg
+- M: ccl/cust_script/dev_all_mp_pdf_viewer.prg
+- M: ccl/cust_script/rm_all_mp_pdf_viewer.prg
+- A: ccl/cust_script/support_tools.html
+- M: ccl/cust_script/rm_support_tools.prg
+- A: ccl/cust_script/rm_audit_manager.prg
+- M: ccl/cust_script/rm_location_manager.prg
+- A: ccl/cust_script/rm_req_manager.prg
+- A: support_tools/js/jsgrid.min.js
+- A: support_tools/css/jsgrid-theme.min.css
+- A: support_tools/css/jsgrid.min.css
+- U: support_tools/css/support_tools.css
+- U: support_tools/js/support_tools.js    
+- M: requisition_manager/js/core.js
+- M: requisition_manager/js/manager.js    
+- M: ccl/cust_script/pfmt_bc_print_to_pdf_req.prg
+- M: ccl/cust_script/pfmt_bc_print_to_pdf_reqa.prg
+- M: ccl/cust_script/pfmt_bc_s_print_to_pdf_req.prg
+### Include / Overwrite Steps
+1. Include bc_all_pdf_std_routines
+2. Include bc_all_pdf_std_routines_json
+3. Run test file
+
+1. Include dev_all_mp_pdf_url
+2. Include bc_all_mp_multi_pdf_viewer
+3. Include rm_all_mp_pdf_viewer
+4. Include bc_all_mp_pdf_viewer
+5. Include dev_all_mp_pdf_viewer
+6. Include rm_audit_manager
+7. Include rm_location_manager
+8. Include rm_req_manager
+9. Include rm_support_tools
+10. Include pfmt_bc_print_to_pdf_req
+11. Include pfmt_bc_print_to_pdf_reqa
+12. Include pfmt_bc_s_print_to_pdf_req
