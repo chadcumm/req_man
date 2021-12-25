@@ -29,6 +29,22 @@ record bc_all_pdf_std_variables
      2 camm_base = vc
      2 camm_content = vc
      2 camm_store = vc
+    1 requisition_list[*]
+     2 code_value = f8
+     2 display = vc
+     2 description = vc
+     2 definition = vc
+     2 requisition_format_cd = f8
+     2 requisition_format_title = vc
+     2 sched_loc_check = i4
+     2 orders_per_req_ind = i4
+     2 rm_priority_group = i4
+     2 rm_priority_oem = vc
+     2 rm_type_display = vc
+     2 subtype_processing = vc
+     2 oe_change_processing = i4
+     2 exclude_date_start = vc
+     2 exclude_date_end = vc
     1 status_data
      2 status = c1
 ) with protect, persist
@@ -49,9 +65,39 @@ declare sGetRequisitionDefinitions(null) = vc with copy, persist
 declare sCheckforPaperRequisition(pRequisitionFormatCD=f8) = i2 with copy, persist
 declare sGetLocationHierarchy(null) = vc with copy, persist
 declare sAddUpdateCodeValueExtension(pCodeValue=f8,pCVEFieldName=vc,pCVEFieldValue=vc,pCVEFieldType=i2) = i2 with copy, persist
+declare sIsSingleOrderRequisition(pRequisitionFormatCD=f8) = i2 with copy, persist
 
 call sPopulateRecVariables(null)
 
+
+;==========================================================================================
+; Return a TRUE or FALSE if the provided REQUISITION FORMAT is set a format that allows
+; only one (TRUE) or multiple (FALSE) orders on a requisition 
+;
+; USAGE: call sIsSingleOrderRequisition(REQUISITION_FORMAT_CD) 
+;==========================================================================================
+subroutine sIsSingleOrderRequisition(pRequisitionFormatCD)
+    call sPDFRoutineLog(build2('start sIsSingleOrderRequisition(',pRequisitionFormatCD,")"))
+    declare pRequisitionFormatCDSingle = i2 with noconstant(0), protect
+    declare i=i2 with noconstant(0), protect
+    
+    call sPDFRoutineLog(build2('-->bc_all_pdf_std_variables->requisition_list=',size(bc_all_pdf_std_variables->requisition_list,5)))
+    for (i=1 to size(bc_all_pdf_std_variables->requisition_list,5))
+        call sPDFRoutineLog(build2('--->checking requisition_format_title='
+            ,bc_all_pdf_std_variables->requisition_list[i].requisition_format_title))
+        call sPDFRoutineLog(build2('--->checking requisition_format_cd='
+            ,bc_all_pdf_std_variables->requisition_list[i].requisition_format_cd))
+        if (bc_all_pdf_std_variables->requisition_list[i].requisition_format_cd = pRequisitionFormatCD)
+            call sPDFRoutineLog(build2('---->matched code=',bc_all_pdf_std_variables->requisition_list[i].requisition_format_cd))
+            if (bc_all_pdf_std_variables->requisition_list[i].orders_per_req_ind = 1)
+                set pRequisitionFormatCDSingle = TRUE
+            endif
+        endif
+    endfor
+    call sPDFRoutineLog(build2('->pRequisitionFormatCDSingle=',pRequisitionFormatCDSingle))
+    return (pRequisitionFormatCDSingle)
+    call sPDFRoutineLog(build2('end sIsSingleOrderRequisition(',pRequisitionFormatCD,")"))
+end ;sIsSingleOrderRequisition
 
 ;==========================================================================================
 ; Return a TRUE or FALSE is the updated or new addition of the code_value_extension for the 
@@ -643,6 +689,9 @@ subroutine sPopulateRecVariables(null)
     set bc_all_pdf_std_variables->urls.camm_content = sCAMMMediaServicesBase('mediaContent')
     set bc_all_pdf_std_variables->status_data.status = "S"
     
+    set stat = cnvtjsontorec(sGetRequisitionDefinitions(null)) 
+    set stat = moverec(requisition_list->qual,bc_all_pdf_std_variables->requisition_list)
+
     call sPDFRoutineLog('bc_all_pdf_std_variables','record')
     call sPDFRoutineLog(build2('end sPopulateRecVariables(',null,")"))
 end ;sPopulateRecVariables
