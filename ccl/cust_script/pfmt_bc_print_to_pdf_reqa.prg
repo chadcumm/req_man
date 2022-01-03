@@ -80,6 +80,7 @@ Mod   Mod Date    Developer              Comment
 056   08/05/2021  Chad Cummings			included protocol_remain_ind flag in query to find protocol orders
 057   08/05/2021  Chad Cummings			do not process cancel events if the previous status was not future
 058   10/02/2021  Chad Cummings			CST-145166 Split ad hoc orders by collection date and time
+059   12/26/2021  Chad Cummings			CST-140781 Updated checks for requisitions to be single or multiple orders
 ******************************************************************************/
 drop program pfmt_bc_print_to_pdf_reqa:dba go
 create program pfmt_bc_print_to_pdf_reqa:dba
@@ -124,6 +125,7 @@ endif
 
 %i cust_script:bc_play_routines.inc
 %i cust_script:bc_play_req.inc
+
 execute bc_all_pdf_std_routines
 
 call bc_custom_code_set(0)
@@ -1018,7 +1020,7 @@ head o.order_id
 	bc_common->encntr_id = o.originating_encntr_id
 	;016 start
 	call writeLog(build2("---->t_rec->grouplist[gcnt].order_cnt=",cnvtstring(t_rec->grouplist[gcnt].order_cnt)))
-	if ((t_rec->grouplist[gcnt].order_cnt > 0) and (trim(uar_get_code_display(oc.requisition_format_cd)) != "LAB_OUTPATIENT_REQ"))
+	if ((t_rec->grouplist[gcnt].order_cnt > 0) and (sIsSingleOrderRequisition(oc.requisition_format_cd) = TRUE))
 		call writeLog(build2("------>not the lab format and more than one order, increasing group count"))
 		gcnt = (gcnt + 1)
 		cnt = 0
@@ -1154,9 +1156,9 @@ else
 	head o.order_id
 		 /*start 023*/
 	 if  (
-				(t_rec->temp_orderlist[d1.seq].requisition_format = "LAB_OUTPATIENT_REQ")
+				(sIsSingleOrderRequisition(t_rec->temp_orderlist[d1.seq].requisition_format) = FALSE)
 			       or 
-			        (			(t_rec->temp_orderlist[d1.seq].requisition_format != "LAB_OUTPATIENT_REQ")
+			        (			(sIsSingleOrderRequisition(t_rec->temp_orderlist[d1.seq].requisition_format) = TRUE)
 			        	 and 	(
 			        	 			(		(t_rec->temp_orderlist[d1.seq].sCHILD_ORDER = 1) 
 			        	 				and (t_rec->temp_orderlist[d1.seq].sLAB_DOT_ORDER = 1))
@@ -1172,7 +1174,7 @@ else
 		bc_common->encntr_id = o.originating_encntr_id
 		;016 start
 		call writeLog(build2("---->t_rec->grouplist[gcnt].order_cnt=",cnvtstring(t_rec->grouplist[gcnt].order_cnt)))
-		if ((t_rec->grouplist[gcnt].order_cnt > 0) and (trim(uar_get_code_display(oc.requisition_format_cd)) != "LAB_OUTPATIENT_REQ"))
+		if ((t_rec->grouplist[gcnt].order_cnt > 0) and (sIsSingleOrderRequisition(oc.requisition_format_cd) = TRUE))
 			call writeLog(build2("------>not the lab format and more than one order, increasing group count"))
 			gcnt = (gcnt + 1)
 			cnt = 0
@@ -1967,7 +1969,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 		,pathway_catalog pc2
 		,pathway p2
 	plan d
-		where t_rec->temp_orderlist[d.seq].requisition_format = "LAB_OUTPATIENT_REQ"
+		where sIsSingleOrderRequisition(t_rec->temp_orderlist[d.seq].requisition_format) = FALSE
 		;start 023 
 		/*
 		where (
@@ -2054,7 +2056,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 	head o2.order_id
 	 /*start 023*/
 	 if  (
-				(t_rec->temp_orderlist[d.seq].requisition_format = "LAB_OUTPATIENT_REQ")
+				(sIsSingleOrderRequisition(t_rec->temp_orderlist[d.seq].requisition_format) = FALSE)
 ;			       or 
 ;			        (			(t_rec->temp_orderlist[d.seq].requisition_format != "LAB_OUTPATIENT_REQ")
 ;			        	 and 	(
@@ -2071,7 +2073,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 		bc_common->encntr_id = o2.originating_encntr_id
 		;016 start
 		call writeLog(build2("---->t_rec->grouplist[gcnt].order_cnt=",cnvtstring(t_rec->grouplist[gcnt].order_cnt)))
-		if ((t_rec->grouplist[gcnt].order_cnt > 0) and (trim(uar_get_code_display(oc2.requisition_format_cd)) != "LAB_OUTPATIENT_REQ"))
+		if ((t_rec->grouplist[gcnt].order_cnt > 0) and (sIsSingleOrderRequisition(oc2.requisition_format_cd) = TRUE))
 			call writeLog(build2("------>not the lab format and more than one order, increasing group count"))
 			gcnt = (gcnt + 1)
 			cnt = 0
@@ -2198,7 +2200,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 			bc_common->encntr_id = o.originating_encntr_id
 			;016 start
 			call writeLog(build2("---->t_rec->grouplist[gcnt].order_cnt=",cnvtstring(t_rec->grouplist[gcnt].order_cnt)))
-			if ((t_rec->grouplist[gcnt].order_cnt > 0) and (trim(uar_get_code_display(oc.requisition_format_cd)) != "LAB_OUTPATIENT_REQ"))
+			if ((t_rec->grouplist[gcnt].order_cnt > 0) and (sIsSingleOrderRequisition(oc.requisition_format_cd) = TRUE))
 				call writeLog(build2("------>not the lab format and more than one order, increasing group count"))
 				gcnt = (gcnt + 1)
 				cnt = 0
@@ -2215,7 +2217,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 			t_rec->grouplist[gcnt].orderlist[cnt].printer_name 			= concat(t_rec->print_dir,"req_pdf_",trim(cnvtstring(o.order_id)),".pdf")
 			t_rec->grouplist[gcnt].orderlist[cnt].conversation_id 		= 0.0
 			t_rec->grouplist[gcnt].orderlist[cnt].requisition_cd 		= oc.requisition_format_cd
-			t_rec->grouplist[gcnt].orderlist[cnt].action_cd 			= requestin->orderlist[d.seq].actiontypecd
+			t_rec->grouplist[gcnt].orderlist[cnt].action_cd 			= requestin->request->orderlist[d.seq].actiontypecd
 			t_rec->grouplist[gcnt].orderlist[cnt].order_mnemonic		= o.order_mnemonic
 			/*for (j=1 to bc_common->requisition_cnt)
 				if (oc.requisition_format_cd = bc_common->requisition_qual[j].requisition_format_cd)
