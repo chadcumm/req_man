@@ -1156,9 +1156,9 @@ else
 	head o.order_id
 		 /*start 023*/
 	 if  (
-				(sIsSingleOrderRequisition(t_rec->temp_orderlist[d1.seq].requisition_format) = FALSE)
+				(sIsSingleOrderRequisition(t_rec->temp_orderlist[d1.seq].requisition_format_cd) = FALSE)
 			       or 
-			        (			(sIsSingleOrderRequisition(t_rec->temp_orderlist[d1.seq].requisition_format) = TRUE)
+			        (			(sIsSingleOrderRequisition(t_rec->temp_orderlist[d1.seq].requisition_format_cd) = TRUE)
 			        	 and 	(
 			        	 			(		(t_rec->temp_orderlist[d1.seq].sCHILD_ORDER = 1) 
 			        	 				and (t_rec->temp_orderlist[d1.seq].sLAB_DOT_ORDER = 1))
@@ -1969,7 +1969,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 		,pathway_catalog pc2
 		,pathway p2
 	plan d
-		where sIsSingleOrderRequisition(t_rec->temp_orderlist[d.seq].requisition_format) = FALSE
+		where sIsSingleOrderRequisition(t_rec->temp_orderlist[d.seq].requisition_format_cd) = FALSE
 		;start 023 
 		/*
 		where (
@@ -2026,7 +2026,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 		where pc2.pathway_catalog_id = pc1.pathway_catalog_id
 	order by
 		 apc2.pathway_id
-		;042,oc2.requisition_format_cd
+		,oc2.requisition_format_cd
 		,date_sort ;042
 		,o2.order_id
 	head report
@@ -2043,7 +2043,8 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 		call writeLog(build2("------>pc.description=",trim(substring(1,25,pc.description))))
 		call writeLog(build2("------>pc2.description=",trim(substring(1,25,pc2.description))))
 		cnt = 0
-	;042 head oc2.requisition_format_cd
+	head oc2.requisition_format_cd
+		null
 	head date_sort ;042
 		call writeLog(build2("---->inside req format=",trim(uar_get_code_display(oc2.requisition_format_cd))))
 		call writeLog(build2("---->inside date_sort=",trim(date_sort)))
@@ -2056,7 +2057,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 	head o2.order_id
 	 /*start 023*/
 	 if  (
-				(sIsSingleOrderRequisition(t_rec->temp_orderlist[d.seq].requisition_format) = FALSE)
+				(sIsSingleOrderRequisition(t_rec->temp_orderlist[d.seq].requisition_format_cd) = FALSE)
 ;			       or 
 ;			        (			(t_rec->temp_orderlist[d.seq].requisition_format != "LAB_OUTPATIENT_REQ")
 ;			        	 and 	(
@@ -2101,7 +2102,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 		call writeLog(build2("addded t_rec->grouplist[gcnt].orderlist[cnt].order_id="
 			,trim(cnvtstring(t_rec->grouplist[gcnt].orderlist[cnt].order_id))))
 	 endif ;023
-	;foot oc2.requisition_format_cd
+	
 	foot date_sort ;042
 		t_rec->grouplist[gcnt].printer_name			= concat(t_rec->print_dir,"req_pdf_",trim(cnvtstring(o2.order_id))
 														,trim(format(sysdate,"hhmmss;;d") ),".pdf")
@@ -2142,6 +2143,8 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 			
 		endif
 		;end 014
+	foot oc2.requisition_format_cd
+		null
 	foot apc2.pathway_id
 		call writeLog(build2("<-----exiting pathway_id selection query"))
 	foot report
@@ -2827,6 +2830,7 @@ if (t_rec->group_cnt > 0)
 		  		if (t_rec->grouplist[i].orderlist[k].protocol_order_cnt = 0)
 		  			call writeLog(build2("-->Protocol order count is 0"))
 		  			if (t_rec->temp_orderlist[j].protocol_order_id = t_rec->grouplist[i].orderlist[k].order_id)
+		  				
 		  				set t_rec->grouplist[i].last_cancel_ind = 1
 		  				call writeLog(build2("--->Protocol order_id matches the orderlist, setting last_cancel_ind"))
 		  			endif
