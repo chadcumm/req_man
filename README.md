@@ -165,3 +165,19 @@ Requisition Manager and Integrated Print-to-PDF
 10. Include pfmt_bc_print_to_pdf_req
 11. Include pfmt_bc_print_to_pdf_reqa
 12. Include pfmt_bc_s_print_to_pdf_req
+
+### Backup
+
+translate bc_all_mp_multi_pdf_viewer    go
+translate bc_all_mp_pdf_viewer          go
+translate dev_all_mp_pdf_url            go
+translate dev_all_mp_pdf_viewer         go 
+translate rm_all_mp_pdf_viewer          go
+translate rm_support_tools              go
+translate rm_location_manager           go
+translate pfmt_bc_print_to_pdf_req      go
+translate pfmt_bc_print_to_pdf_reqa     go
+translate pfmt_bc_s_print_to_pdf_req    go
+translate pfmt_dev_print_to_pdf_req     go
+translate pfmt_dev_print_to_pdf_reqa    go
+translate pfmt_dev_s_print_to_pdf_req   go
