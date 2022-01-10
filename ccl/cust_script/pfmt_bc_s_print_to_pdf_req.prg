@@ -743,7 +743,7 @@ detail
 		for (j=1 to bc_common->requisition_cnt)
 			if (temp_orders->qual[d1.seq].requsition_format_cd = bc_common->requisition_qual[j].requisition_format_cd)
 				single_wip->qual[cnt].requisition_script	= bc_common->requisition_qual[j].requisition_object
-				single_wip->qual[cnt].requisition_title		= bc_common->requisition_qual[j].requisition_title
+				single_wip->qual[cnt].requisition_title		= bc_common->requisition_qual[j].requisition_title_ce
 			endif
 		endfor
 		single_wip->qual[cnt].print_prsnl_id = reqinfo->updt_id

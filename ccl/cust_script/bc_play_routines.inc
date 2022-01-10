@@ -18,16 +18,17 @@
   GENERATED MODIFICATION CONTROL LOG
 ******************************************************************************
  
-Mod   Mod Date    Developer              Comment
----   ----------  --------------------  --------------------------------------
-001   10/01/2019  Chad Cummings			Initial Release
+Mod   Mod Date    JIRA 			Developer              	Comment
+---   ----------  -----			---------------  		--------------------------------------
+001   10/01/2019  				Chad Cummings			Initial Release
+002  10-Jan-2022  CST-140781 	Chad Cummings          	New subroutines
 ******************************************************************************/
  
 ;*************************************************************************
 ;* COMMON RECORD STRUCTURES
 ;*************************************************************************
 ;the frec record structure is used by CCLIO() for the log file
-free record frec
+;free record frec
 record frec
 	(
      1 file_desc = i4
@@ -35,10 +36,10 @@ record frec
      1 file_dir = i4
      1 file_name = vc
      1 file_buf = vc
-)
+) with protect
  
  
-free record program_log
+;free record program_log
 record program_log
 	(
 	 1 produce_log				= i2	;0 to start a log, 1 to not create a log
@@ -61,9 +62,9 @@ record program_log
 	  2 attachments[*]
 	   3 file_path				= vc	;path to attachments
 	   3 filename				= vc    ;file_names
-)
+) with protect
  
-free record bc_common
+;free record bc_common
 record bc_common
 (
 	1 code_set 					= i4	;custom code set for process options
@@ -75,12 +76,14 @@ record bc_common
 	 2 requisition_format_cd	= f8	;code value of the requisition to match
 	 2 requisition_object		= vc	;object name of the program to execute to generate the req
 	 2 requisition_title		= vc	;title used to store single ordres
+	 2 requisition_title_ce		= vc	;new title from code_value extensions that will be used in writing out the result
 	 2 collation_seq			= i2	;collation_seq states single order req (1) or multiple (2)
 	1 req_multiple_cnt	= i2			;number of requisitions to qualify
 	1 req_multiple_qual[*]				;list of requisitions that qualify for PDF mode
 	 2 requisition_format_cd	= f8	;code value of the requisition to match
 	 2 requisition_object		= vc	;object name of the program to execute to generate the req
 	 2 requisition_title		= vc	;title used to store single ordres
+	 2 requisition_title_ce		= vc	;new title from code_value extensions that will be used in writing out the result
 	 2 collation_seq			= i2	;collation_seq states single order req (1) or multiple (2)
 	1 catalog_type_cnt			= i2	;catalog type count
 	1 catalog_type[*]					;list of catalog types to qualify
@@ -117,7 +120,7 @@ record bc_common
 	1 location_qual[*]
 	 2 display					= vc	;location display
 	 2 code_value				= f8	;code_value of the unit level
-)
+) with protect
  
  
  
@@ -595,12 +598,16 @@ subroutine bc_get_single_ord_requisitions(null)
 	select into "nl:"
 	from
 		 code_value cv
+		,code_value_extension cve
 		,code_value ec
 	plan cv
 		where cv.code_set 		= bc_common->code_set
 		and   cv.active_ind 	= 1
 		and   cv.cdf_meaning	= "REQUISITION"
 		and   cv.collation_seq	= 1
+	join cve
+		where cve.code_value    = outerjoin(cv.code_value)
+		and   cve.field_name    = outerjoin("REQUISITION_TITLE")
 	join ec
 		where ec.code_set 		= 6002
 		and   ec.cdf_meaning	= cv.description
@@ -619,12 +626,20 @@ subroutine bc_get_single_ord_requisitions(null)
 		bc_common->requisition_qual[bc_common->requisition_cnt].requisition_object		= cv.definition
 		bc_common->requisition_qual[bc_common->requisition_cnt].requisition_title		= cv.display
 		bc_common->requisition_qual[bc_common->requisition_cnt].collation_seq			= cv.collation_seq
+		bc_common->requisition_qual[bc_common->requisition_cnt].requisition_title_ce	= cve.field_value
+		
+		if (bc_common->requisition_qual[bc_common->requisition_cnt].requisition_title_ce = "")
+			bc_common->requisition_qual[bc_common->requisition_cnt].requisition_title_ce = cv.display
+		endif
+		
 		call writeLog(build2("* ->requisition_format_cd = ",
 				trim(cnvtstring(bc_common->requisition_qual[bc_common->requisition_cnt].requisition_format_cd))))
 		call writeLog(build2("* ->requisition_object = ",
 				trim(bc_common->requisition_qual[bc_common->requisition_cnt].requisition_object)))
 		call writeLog(build2("* ->requisition_title = ",
 				trim(bc_common->requisition_qual[bc_common->requisition_cnt].requisition_title)))
+		call writeLog(build2("* ->requisition_title_ce = ",
+				trim(bc_common->requisition_qual[bc_common->requisition_cnt].requisition_title_ce)))
 	with nocounter
  
 	call writeLog(build2("* END   bc_get_requisitions *********************************"))
@@ -637,11 +652,15 @@ subroutine bc_get_multi_ord_requisitions(null)
 	from
 		 code_value cv
 		,code_value ec
+		,code_value_extension cve
 	plan cv
 		where cv.code_set 		= bc_common->code_set
 		and   cv.active_ind 	= 1
 		and   cv.cdf_meaning	= "REQUISITION"
 		and   cv.collation_seq	= 2
+	join cve
+		where cve.code_value    = outerjoin(cv.code_value)
+		and   cve.field_name    = outerjoin("REQUISITION_TITLE")
 	join ec
 		where ec.code_set 		= 6002
 		and   ec.cdf_meaning	= cv.description
@@ -659,13 +678,21 @@ subroutine bc_get_multi_ord_requisitions(null)
 		bc_common->requisition_qual[bc_common->requisition_cnt].requisition_format_cd	= ec.code_value
 		bc_common->requisition_qual[bc_common->requisition_cnt].requisition_object		= cv.definition
 		bc_common->requisition_qual[bc_common->requisition_cnt].requisition_title		= cv.display
-		bc_common->requisition_qual[bc_common->requisition_cnt].collation_seq			= cv.collation_seq
+		bc_common->requisition_qual[bc_common->requisition_cnt].collation_seq			= cv.collation_seq	
+		bc_common->requisition_qual[bc_common->requisition_cnt].requisition_title_ce	= cve.field_value
+		
+		if (bc_common->requisition_qual[bc_common->requisition_cnt].requisition_title_ce = "")
+			bc_common->requisition_qual[bc_common->requisition_cnt].requisition_title_ce = cv.display
+		endif
+		
 		call writeLog(build2("* ->requisition_format_cd = ",
 				trim(cnvtstring(bc_common->requisition_qual[bc_common->requisition_cnt].requisition_format_cd))))
 		call writeLog(build2("* ->requisition_object = ",
 				trim(bc_common->requisition_qual[bc_common->requisition_cnt].requisition_object)))
 		call writeLog(build2("* ->requisition_title = ",
 				trim(bc_common->requisition_qual[bc_common->requisition_cnt].requisition_title)))
+		call writeLog(build2("* ->requisition_title_ce = ",
+				trim(bc_common->requisition_qual[bc_common->requisition_cnt].requisition_title_ce)))
 	with nocounter
  
 	call writeLog(build2("* END   bc_get_requisitions *********************************"))
@@ -678,11 +705,15 @@ subroutine bc_get_multiple_ord_requisitions(null)
 	from
 		 code_value cv
 		,code_value ec
+		,code_value_extension cve
 	plan cv
 		where cv.code_set 		= bc_common->code_set
 		and   cv.active_ind 	= 1
 		and   cv.cdf_meaning	= "REQUISITION"
 		and   cv.collation_seq	= 2
+	join cve
+		where cve.code_value    = outerjoin(cv.code_value)
+		and   cve.field_name    = outerjoin("REQUISITION_TITLE")
 	join ec
 		where ec.code_set 		= 6002
 		and   ec.cdf_meaning	= cv.description
@@ -701,6 +732,12 @@ subroutine bc_get_multiple_ord_requisitions(null)
 		bc_common->req_multiple_qual[bc_common->req_multiple_cnt].requisition_object		= cv.definition
 		bc_common->req_multiple_qual[bc_common->req_multiple_cnt].requisition_title		= cv.display
 		bc_common->req_multiple_qual[bc_common->req_multiple_cnt].collation_seq			= cv.collation_seq
+		bc_common->req_multiple_qual[bc_common->req_multiple_cnt].requisition_title_ce		= cve.field_value
+		
+		if (bc_common->req_multiple_qual[bc_common->req_multiple_cnt].requisition_title_ce = "")
+			bc_common->req_multiple_qual[bc_common->req_multiple_cnt].requisition_title_ce = cv.display
+		endif
+		
 		call writeLog(build2("* ->requisition_format_cd = ",
 				trim(cnvtstring(bc_common->req_multiple_qual[bc_common->req_multiple_cnt].requisition_format_cd))))
 		call writeLog(build2("* ->requisition_object = ",

@@ -1073,8 +1073,8 @@ foot o.order_id
 		if (oc.requisition_format_cd = bc_common->requisition_qual[j].requisition_format_cd)
 			
 			t_rec->grouplist[gcnt].requisition_script = bc_common->requisition_qual[j].requisition_object
-			t_rec->grouplist[gcnt].group_desc 			 = bc_common->requisition_qual[j].requisition_title
-			t_rec->grouplist[gcnt].req_desc 			 = bc_common->requisition_qual[j].requisition_title
+			t_rec->grouplist[gcnt].group_desc 			 = bc_common->requisition_qual[j].requisition_title_ce
+			t_rec->grouplist[gcnt].req_desc 			 = bc_common->requisition_qual[j].requisition_title_ce
 			
 		endif
 	endfor
@@ -1217,8 +1217,8 @@ else
 			if (oc.requisition_format_cd = bc_common->requisition_qual[j].requisition_format_cd)
 				
 				t_rec->grouplist[gcnt].requisition_script = bc_common->requisition_qual[j].requisition_object
-				t_rec->grouplist[gcnt].group_desc 			 = bc_common->requisition_qual[j].requisition_title
-				t_rec->grouplist[gcnt].req_desc 			 = bc_common->requisition_qual[j].requisition_title
+				t_rec->grouplist[gcnt].group_desc 			 = bc_common->requisition_qual[j].requisition_title_ce
+				t_rec->grouplist[gcnt].req_desc 			 = bc_common->requisition_qual[j].requisition_title_ce
 				
 			endif
 		endfor
@@ -2118,7 +2118,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 		for (j=1 to bc_common->requisition_cnt)
 			if (oc2.requisition_format_cd = bc_common->requisition_qual[j].requisition_format_cd)
 				t_rec->grouplist[gcnt].requisition_script = bc_common->requisition_qual[j].requisition_object	
-				t_rec->grouplist[gcnt].req_desc 			 = bc_common->requisition_qual[j].requisition_title
+				t_rec->grouplist[gcnt].req_desc 			 = bc_common->requisition_qual[j].requisition_title_ce
 			endif
 		endfor
 		cnt = 0
@@ -2243,7 +2243,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 				if (oc.requisition_format_cd = bc_common->requisition_qual[j].requisition_format_cd)
 					
 					t_rec->grouplist[gcnt].requisition_script = bc_common->requisition_qual[j].requisition_object
-					t_rec->grouplist[gcnt].group_desc 			 = bc_common->requisition_qual[j].requisition_title
+					t_rec->grouplist[gcnt].group_desc 			 = bc_common->requisition_qual[j].requisition_title_ce
 					
 				endif
 			endfor
@@ -2371,7 +2371,7 @@ call writeLog(build2("-->selecting orders from orderlist, size=",trim(cnvtstring
 				if (oc.requisition_format_cd = bc_common->requisition_qual[j].requisition_format_cd)
 					
 					t_rec->grouplist[gcnt].requisition_script = bc_common->requisition_qual[j].requisition_object
-					t_rec->grouplist[gcnt].group_desc 			 = bc_common->requisition_qual[j].requisition_title
+					t_rec->grouplist[gcnt].group_desc 			 = bc_common->requisition_qual[j].requisition_title_ce
 					
 				endif
 			endfor
