@@ -3,8 +3,8 @@ create program rm_support_tools
  
 prompt 
 	"Output to File/Printer/MINE" = "MINE"
-	, "VERSION" = "1.1.0"
-	, "STABLE" = 0 
+	, "VERSION" = ""
+	, "STABLE" = 1 
 
 with OUTDEV, VERSION, STABLE
 
@@ -72,8 +72,8 @@ record 3011002Reply (
  
 declare html_output = vc with noconstant(" ")
  
-set 3011001Request->Module_Dir = "ccluserdir:"
-set 3011001Request->Module_Name = "3support_tools.html"
+set 3011001Request->Module_Dir = "cust_script:"
+set 3011001Request->Module_Name = "support_tools.html"
 set 3011001Request->bAsBlob = 1
  
 execute eks_get_source with replace ("REQUEST" ,3011001Request ) , replace ("REPLY" ,3011001Reply )

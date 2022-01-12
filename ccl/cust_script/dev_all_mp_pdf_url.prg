@@ -86,6 +86,8 @@ record record_data
 
 set record_data->clinical_event_id = $CE_EVENT_ID
 
+execute bc_all_pdf_std_routines
+
 if (record_data->clinical_event_id = 0.0)
 	set record_data->clinical_event_id = 230668007.00 ;TESTING
 endif
@@ -153,13 +155,8 @@ head ce.encntr_id
 	record_data->parent_event_id = ce.parent_event_id
 with nocounter
 
-set record_data->cmv_base = concat(
-										"http://phsacdea.cerncd.com/"
-										,"camm/"
-										,trim(cnvtlower(curdomain))				
-										;,trim(cnvtlower(b0783))
-										,".phsa_cd.cerncd.com/service/mediaContent/"
-								)
+set record_data->cmv_base = sCAMMMediaServicesBase('mediaContent')
+
 ;set record_data->cmv_base = "http://phsacdeanp/camm-mpage/b0783.phsa_cd.cerncd.com/service/mediaContent/"
 set record_data->cmv_url = concat(trim(record_data->cmv_base),trim(record_data->identifier))
 
