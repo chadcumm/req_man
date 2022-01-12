@@ -582,6 +582,8 @@ set record_data->timer_qual[record_data->timer_cnt].elapsed = datetimediff(
  
 /* setup the providers */
 declare provider_parser = vc with public ,noconstant ("" )
+declare verified_parser = vc with public ,noconstant ("" )
+
 record temp_provider
 (
 	1 cnt = i2
@@ -610,18 +612,24 @@ call echorecord(temp_provider)
  
 if (temp_provider->cnt = 0)
 	set provider_parser = "1=1"
+	set verified_parser = "1=1"
 else
 	set provider_parser = "p.person_id in("
+	set verified_parser = "ce.verified_prsnl_id in("
 	for (i = 1 to temp_provider->cnt)
 		if (i>1)
 			set provider_parser = concat(provider_parser,^,^)
+			set verified_parser = concat(verified_parser,^,^)
 		endif
 		set provider_parser = concat(provider_parser,trim(cnvtstring(temp_provider->list[i].person_id)),".0")
+		set verified_parser = concat(verified_parser,trim(cnvtstring(temp_provider->list[i].person_id)),".0")
 	endfor
 	set provider_parser = concat(provider_parser,^)^)
+	set verified_parser = concat(verified_parser,^)^)
 endif
  
 call echo(build2("provider_parser=",trim(provider_parser)))
+call echo(build2("verified_parser=",trim(verified_parser)))
  
 set record_data->timer_cnt = (record_data->timer_cnt + 1)
 set stat = alterlist(record_data->timer_qual,record_data->timer_cnt)
@@ -812,6 +820,7 @@ CALL gathertasksbylocdt (0)
 		and   ce.event_tag        != "Date\Time Correction"
 ;		and   parser(document_date_parser)
 		and   parser(patient_parser)
+		and   parser(verified_parser)
 	join pe
 		where pe.event_id = ce.parent_event_id
 		and	  pe.result_status_cd in(
@@ -1360,7 +1369,7 @@ CALL gathertasksbylocdt (0)
 		 2 display = vc
 	) with protect
  
-	select distinct
+	select distinct into "nl:"
 		 cv1.display
 		,cv2.display
 		,cve1.field_name
@@ -1410,7 +1419,7 @@ CALL gathertasksbylocdt (0)
 		req_view->cnt = cnt
 	with nocounter
  
-	select distinct
+	select distinct into "nl:"
 		 cv3.display
 		,cv3.code_value
 		,cve1.field_name
