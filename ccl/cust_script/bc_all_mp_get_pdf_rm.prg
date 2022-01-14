@@ -34,6 +34,7 @@ Mod   Mod Date    Developer              Comment
 012   06/28/2021  Chad Cummings			CST-128803 person level scope
 013   06/28/2021   Chad Cummings		CST-129352 added requisition manager fields
 014   07/06/2021  Chad Cummings			Added unit to output
+015   12/01/2021  Chad Cummings		    CST-121778
 ******************************************************************************/
  
 drop program bc_all_mp_get_pdf_rm:dba go
@@ -277,7 +278,7 @@ join o
 			
 	and   o.order_status_cd in(
 									 value(uar_get_code_by("MEANING",6004,"FUTURE"))
-									;002 ,value(uar_get_code_by("MEANING",6004,"ORDERED"))
+									,value(uar_get_code_by("MEANING",6004,"VOIDEDWRSLT"))
 								)
 join oc
 	where oc.catalog_cd = o.catalog_cd
@@ -392,7 +393,8 @@ detail
 	call echo(build("-->this=",format(t_rec->data[d1.seq].order_qual[d2.seq].requested_start_dt_tm,";;q")))
 	call echo(build("-->prev_req_dt_tm=",format(t_rec->data[d1.seq].order_qual[d2.seq].requested_start_dt_tm,";;q")))
 foot order_id
-	if (t_rec->data[d1.seq].order_qual[d2.seq].order_status_cd = uar_get_code_by("MEANING",6004,"FUTURE"))
+	if (t_rec->data[d1.seq].order_qual[d2.seq].order_status_cd 
+		in(uar_get_code_by("MEANING",6004,"FUTURE"),uar_get_code_by("MEANING",6004,"VOIDEDWRSLT")))
 		if (format(cnvtdatetime(prev_req_dt_tm),"mm-dd-yyyy;;d") != format(cnvtdatetime(t_rec->data[d1.seq].order_qual[d2.seq].
 		requested_start_dt_tm),"mm-dd-yyyy;;d"))
 			multiple_order_dates_ind = 1
@@ -406,7 +408,8 @@ with nocounter
 
 for (i=1 to t_rec->cnt)
 	for (j=1 to t_rec->data[i].order_cnt)
-		if (t_rec->data[i].order_qual[j].order_status_cd = uar_get_code_by("MEANING",6004,"FUTURE"))
+		if (t_rec->data[i].order_qual[j].order_status_cd 
+		in(uar_get_code_by("MEANING",6004,),uar_get_code_by("MEANING",6004,"VOIDEDWRSLT")))
 			set t_rec->data[i].valid_doc_ind = 1
 		endif
 		if (t_rec->data[i].order_qual[j].order_status_cd = uar_get_code_by("MEANING",6004,"ORDERED"))
