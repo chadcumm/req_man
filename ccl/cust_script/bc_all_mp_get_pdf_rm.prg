@@ -34,6 +34,7 @@ Mod   Mod Date    Developer              Comment
 012   06/28/2021  Chad Cummings			CST-128803 person level scope
 013   06/28/2021   Chad Cummings		CST-129352 added requisition manager fields
 014   07/06/2021  Chad Cummings			Added unit to output
+015   01/17/2022  Chad Cummings			CST-153713
 ******************************************************************************/
  
 drop program bc_all_mp_get_pdf_rm:dba go
@@ -133,6 +134,8 @@ from
 	,encounter e
 	,ce_blob_result ceb
 	,prsnl p
+	,prsnl_org_reltn por
+	,encounter e2
 plan e
 	where e.encntr_id = $encntrId
 join ce
@@ -149,6 +152,14 @@ join ce
 	
 	and   ce.valid_until_dt_tm >= cnvtdatetime(curdate, curtime3)
 	and   ce.event_tag        != "Date\Time Correction"
+join e2
+	where e2.encntr_id = ce.encntr_id
+join por
+	where por.person_id = reqinfo->updt_id
+	and por.organization_id = e2.organization_id
+	and por.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3)
+	and por.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3)
+	and por.active_ind = 1
 join pe
 	where pe.event_id = ce.parent_event_id
 	and	  pe.result_status_cd in(
