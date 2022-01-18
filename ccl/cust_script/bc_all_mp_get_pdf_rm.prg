@@ -134,7 +134,6 @@ from
 	,encounter e
 	,ce_blob_result ceb
 	,prsnl p
-	,prsnl_org_reltn por
 	,encounter e2
 plan e
 	where e.encntr_id = $encntrId
@@ -152,14 +151,6 @@ join ce
 	
 	and   ce.valid_until_dt_tm >= cnvtdatetime(curdate, curtime3)
 	and   ce.event_tag        != "Date\Time Correction"
-join e2
-	where e2.encntr_id = ce.encntr_id
-join por
-	where por.person_id = reqinfo->updt_id
-	and por.organization_id = e2.organization_id
-	and por.beg_effective_dt_tm < cnvtdatetime (curdate ,curtime3)
-	and por.end_effective_dt_tm >= cnvtdatetime (curdate ,curtime3)
-	and por.active_ind = 1
 join pe
 	where pe.event_id = ce.parent_event_id
 	and	  pe.result_status_cd in(
@@ -171,6 +162,9 @@ join pe
 	
 	and   pe.valid_until_dt_tm >= cnvtdatetime(curdate, curtime3)
 	and   pe.event_tag        != "Date\Time Correction"
+join e2
+	where   e2.encntr_id = pe.encntr_id
+	and 	parser(sApplyOrgSecurity("e2.organization_id"))
 join ceb
 	where ceb.event_id = ce.event_id
     and   ceb.valid_until_dt_tm >= cnvtdatetime(curdate,curtime3)
