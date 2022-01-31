@@ -21,6 +21,7 @@
 Mod   Mod Date    Developer              Comment
 ---   ----------  --------------------  --------------------------------------
 001   10/01/2019  Chad Cummings			Initial Release
+002   12/02/2021  Chad Cummings			CST-137152 Added LTD Locations
 ******************************************************************************/
  
 ;*************************************************************************
@@ -359,7 +360,7 @@ subroutine bc_get_included_locations(null)
 	join d1
 	join cv3
 	    where cv3.code_set = 103507
-	    and   cv3.cdf_meaning = "LOCATION"
+	    and   cv3.cdf_meaning in("LOCATION","LOCATION_LTD") 
 	    and   cv3.active_ind = 1
 	    and   cv3.display = cv2.display
 	order by
