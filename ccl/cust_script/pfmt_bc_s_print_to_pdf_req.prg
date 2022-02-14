@@ -312,7 +312,7 @@ else
 		set t_request->qual[t_request->cnt].requisitionformatcd		= requestin->orderlist[i].requisitionformatcd
 		set t_request->qual[t_request->cnt].actiontypecd			= requestin->orderlist[i].actiontypecd
 		for (j=1 to size(requestin->orderlist[i]->detaillist,5))
-			if (sIsSchedulingField(requestin->request->orderlist[i]->detaillist[j].oefieldid) = TRUE)
+			if (sIsSchedulingField(requestin->orderlist[i]->detaillist[j].oefieldid) = TRUE)
 				set t_request->qual[t_request->cnt].detaillist_cnt = (t_request->qual[t_request->cnt].detaillist_cnt + 1)
 				set stat = alterlist(t_request->qual[t_request->cnt].detaillist,t_request->qual[t_request->cnt].detaillist_cnt)
 				set t_request->qual[t_request->cnt].detaillist[t_request->qual[t_request->cnt].detaillist].oefieldid = 
