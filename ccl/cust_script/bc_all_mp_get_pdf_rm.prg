@@ -127,14 +127,18 @@ record t_rec
 set t_rec->sysdate_string 			= format(sysdate,"yyyymmddhhmmss;;d") 
 set t_rec->log_filename_request 	= concat ("cclscratch:",trim(cnvtlower(curprog)),"_" ,t_rec->sysdate_string ,".dat" )
 
+
+execute bc_all_all_std_routines
+
+
 select into "nl:"
 from
 	 clinical_event ce
 	,clinical_event pe
 	,encounter e
+	,encounter e2
 	,ce_blob_result ceb
 	,prsnl p
-	,encounter e2
 plan e
 	where e.encntr_id = $encntrId
 join ce
@@ -164,7 +168,7 @@ join pe
 	and   pe.event_tag        != "Date\Time Correction"
 join e2
 	where   e2.encntr_id = pe.encntr_id
-	and 	parser(sApplyOrgSecurity("e2.organization_id"))
+	and parser(sApplyOrgSecurity("e2.organization_id"))	
 join ceb
 	where ceb.event_id = ce.event_id
     and   ceb.valid_until_dt_tm >= cnvtdatetime(curdate,curtime3)
@@ -705,3 +709,4 @@ END ;showError
 call echojson(outrec,t_rec->log_filename_request)
  
 end go
+
