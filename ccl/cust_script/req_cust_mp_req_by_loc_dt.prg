@@ -34,6 +34,7 @@ Mod   Mod Date    Developer              Comment
 011   04/16/2021  Chad Cummings			Requested Start Date and Time * restricted to day only (no time)
 012   07/01/2021  Chad Cummings			updated maxvarlen to allow for more data
 013   11/01/2021  Chad Cummings			added loose requisition execution
+014   01/12/2022  Chad Cummings			CST-153414 - Performance improvement
 ******************************************************************************/
 DROP PROGRAM req_cust_mp_req_by_loc_dt GO
 CREATE PROGRAM req_cust_mp_req_by_loc_dt
@@ -583,7 +584,7 @@ set record_data->timer_qual[record_data->timer_cnt].elapsed = datetimediff(
 /* setup the providers */
 declare provider_parser = vc with public ,noconstant ("" )
 declare verified_parser = vc with public ,noconstant ("" )
-
+ 
 record temp_provider
 (
 	1 cnt = i2
@@ -1105,7 +1106,7 @@ CALL gathertasksbylocdt (0)
  
 		and   o.order_status_cd in(
 										 value(uar_get_code_by("MEANING",6004,"FUTURE"))
-										;002 ,value(uar_get_code_by("MEANING",6004,"ORDERED"))
+										,value(uar_get_code_by("MEANING",6004,"VOIDEDWRSLT"))
 									)
 	join oc
 		where oc.catalog_cd = o.catalog_cd
